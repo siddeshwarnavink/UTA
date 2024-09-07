@@ -1,10 +1,10 @@
 local crypto = require "crypto"
 
-function encrypt(data, key)
+function encrypt(key, data)
    return data
 end
 
-function decrypt(data, key)
+function decrypt(key, data)
    return data
 end
 

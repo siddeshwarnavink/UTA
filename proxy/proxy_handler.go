@@ -9,13 +9,13 @@ import (
 	"os"
 	"sync"
 
-	"github.com/siddeshwarnavink/UTA/crypto"
+	"github.com/siddeshwarnavink/UTA/embeded"
 )
 
 func ProxyHandler(plainConn net.Conn,
 	encryptedConn net.Conn,
 	derivedKey []byte,
-	algoName crypto.Algorithm) {
+	algo *embeded.CryptoAlgo) {
 
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -39,13 +39,7 @@ func ProxyHandler(plainConn net.Conn,
 				return
 			}
 
-			encryptedData, err := crypto.Encrypt(buf[:n], derivedKey,
-				algoName)
-			if err != nil {
-				fmt.Printf("Error encrypting data: %v", err)
-				continue
-			}
-
+			encryptedData := algo.Encrypt(derivedKey, buf[:n])
 			_, err = encryptedConn.Write(encryptedData)
 
 			if err != nil {
@@ -80,13 +74,7 @@ func ProxyHandler(plainConn net.Conn,
 				return
 			}
 
-			decryptedData, err := crypto.Decrypt(buf[:n],
-				derivedKey, algoName)
-
-			if err != nil {
-				fmt.Printf("Error decrypting data: %v", err)
-				continue
-			}
+			decryptedData := algo.Decrypt(derivedKey, buf[:n])
 
 			_, err = plainConn.Write(decryptedData)
 

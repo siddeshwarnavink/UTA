@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/siddeshwarnavink/UTA/crypto"
 	"github.com/siddeshwarnavink/UTA/keyExchange"
 )
 
@@ -14,7 +13,7 @@ func ParseFlags() (*Flags, error) {
 
 	var mode AdapterMode
 	var enc, dec string
-	var algo crypto.Algorithm
+	var algo string
 	var protocol keyExchange.Protocol
 
 	i := 0
@@ -41,15 +40,10 @@ func ParseFlags() (*Flags, error) {
 			}
 		case "--algo":
 			if i+1 < len(args) {
-				switch args[i+1] {
-				case string(crypto.AlgoAES):
-					algo = crypto.AlgoAES
-				case string(crypto.AlgoChaCha):
-					algo = crypto.AlgoChaCha
-				case string(crypto.AlgoTwoFish):
-					algo = crypto.AlgoTwoFish
-				}
+				algo = args[i+1]
 				i++
+			} else if enc != "" {
+				return nil, errors.New("missing value for -algo")
 			}
 		case "--prot":
 			if i+1 < len(args) {
@@ -146,7 +140,7 @@ func RenderForm(parsedFlags Flags) (Flags, error) {
 			return parsedFlags, errors.New("algorithm not selected")
 		}
 		fmt.Println("---")
-		parsedFlags.Algo = AlgorithmFromString(algoResult)
+		parsedFlags.Algo = algoResult
 	}
 	return parsedFlags, nil
 }

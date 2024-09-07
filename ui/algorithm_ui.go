@@ -7,6 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/siddeshwarnavink/UTA/embeded"
 )
 
 var Algorithms = []string{
@@ -61,14 +62,13 @@ func (m AlgorithmModel) View() string {
 	s := strings.Builder{}
 	s.WriteString("\n\nWhich Cryptographic Algorithm should be used?\n\n")
 
-	for i := 0; i < len(Algorithms); i++ {
+	for i, algo := range embeded.CryptoList {
+		style := unfocusedStyle
 		if m.cursor == i {
-			s.WriteString(focusedStyle.Render("> "))
-			s.WriteString(focusedStyle.Render(Algorithms[i]))
-		} else {
-			s.WriteString(unfocusedStyle.Render("> "))
-			s.WriteString(unfocusedStyle.Render(Algorithms[i]))
+			style = focusedStyle
 		}
+		s.WriteString(style.Render("> "))
+		s.WriteString(style.Render(algo.Name))
 		s.WriteString("\n")
 	}
 

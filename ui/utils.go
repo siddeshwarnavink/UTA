@@ -1,7 +1,9 @@
 package ui
 
 import (
-	"github.com/siddeshwarnavink/UTA/crypto"
+	"errors"
+
+	"github.com/siddeshwarnavink/UTA/embeded"
 	"github.com/siddeshwarnavink/UTA/keyExchange"
 )
 
@@ -16,7 +18,7 @@ type Flags struct {
 	Mode     AdapterMode
 	Enc      string
 	Dec      string
-	Algo     crypto.Algorithm
+	Algo     string
 	Protocol keyExchange.Protocol
 }
 
@@ -31,17 +33,13 @@ func ModeFromString(s string) AdapterMode {
 	}
 }
 
-func AlgorithmFromString(s string) crypto.Algorithm {
-	switch s {
-	case "Advanced Encryption Standard(AES)":
-		return crypto.AlgoAES
-	case "ChaCha20":
-		return crypto.AlgoChaCha
-	case "TwoFish":
-		return crypto.AlgoTwoFish
-	default:
-		return crypto.AlgoAES
+func AlgorithmFromString(name string) (*embeded.CryptoAlgo, error) {
+	for _, algo := range embeded.CryptoList {
+		if algo.Name == name {
+			return &algo, nil
+		}
 	}
+	return nil, errors.New("Crypto algorithm not found")
 }
 
 func KeyProtocolFromString(s string) keyExchange.Protocol {

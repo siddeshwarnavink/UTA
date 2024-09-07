@@ -8,8 +8,8 @@ import (
 
 type CryptoAlgo struct {
 	Name    string
-	Encrypt func([]byte, []byte) // <- key, data
-	Decrypt func([]byte, []byte) // <- key, data
+	Encrypt func([]byte, []byte) []byte // <- key, data -> encrypted data
+	Decrypt func([]byte, []byte) []byte // <- key, data -> decrypted data
 }
 
 // list of all registerd cryto algo
@@ -20,34 +20,46 @@ func registerCrypto(l *lua.LState) int {
 	encryptFunc := l.CheckFunction(2) // similarly second
 	decryptFunc := l.CheckFunction(3) // and third
 
-	encrypt := func(key, data []byte) {
+	encrypt := func(key, data []byte) []byte {
 		luaKey := lua.LString(string(key))
 		luaData := lua.LString(string(data))
 
 		err := l.CallByParam(lua.P{
 			Fn:      encryptFunc,
-			NRet:    0,
+			NRet:    1,
 			Protect: true,
 		}, luaKey, luaData)
 
 		if err != nil {
 			fmt.Println("Error in encryption:", err)
+			return nil
 		}
+
+		luaResult := l.Get(-1)
+		l.Pop(1)
+
+		return []byte(luaResult.String())
 	}
 
-	decrypt := func(key, data []byte) {
+	decrypt := func(key, data []byte) []byte {
 		luaKey := lua.LString(string(key))
 		luaData := lua.LString(string(data))
 
 		err := l.CallByParam(lua.P{
 			Fn:      decryptFunc,
-			NRet:    0,
+			NRet:    1,
 			Protect: true,
 		}, luaKey, luaData)
 
 		if err != nil {
 			fmt.Println("Error in decryption:", err)
+			return nil
 		}
+
+		luaResult := l.Get(-1)
+		l.Pop(1)
+
+		return []byte(luaResult.String())
 	}
 
 	CryptoList = append(CryptoList, CryptoAlgo{

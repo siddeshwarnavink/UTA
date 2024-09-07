@@ -75,7 +75,13 @@ func ClientProxy(l *lua.LState, flags *ui.Flags) {
 		if !proxy.IsUninitialized(derivedKey) {
 			fmt.Printf("\nGot shared key %x\n", derivedKey)
 
-			go proxy.ProxyHandler(plainConn, encryptedConn, derivedKey, flags.Algo)
+			algo, err := ui.AlgorithmFromString(flags.Algo)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+
+			go proxy.ProxyHandler(plainConn, encryptedConn, derivedKey, algo)
 		}
 	}
 }
@@ -112,7 +118,13 @@ func ServerProxy(l *lua.LState, flags *ui.Flags) {
 		if !proxy.IsUninitialized(derivedKey) {
 			fmt.Printf("\nGot shared key %x\n", derivedKey)
 
-			go proxy.ProxyHandler(plainConn, encryptedConn, derivedKey, flags.Algo)
+			algo, err := ui.AlgorithmFromString(flags.Algo)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+
+			go proxy.ProxyHandler(plainConn, encryptedConn, derivedKey, algo)
 		}
 	}
 }

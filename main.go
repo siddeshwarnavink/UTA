@@ -6,12 +6,15 @@ import (
 	"net"
 	"os"
 
+	"github.com/siddeshwarnavink/UTA/embeded"
 	"github.com/siddeshwarnavink/UTA/keyExchange"
 	"github.com/siddeshwarnavink/UTA/proxy"
 	"github.com/siddeshwarnavink/UTA/ui"
+	lua "github.com/yuin/gopher-lua"
 )
 
 func main() {
+	// logging
 	logFile, err := os.OpenFile("logs/adapter.log",
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
@@ -19,8 +22,13 @@ func main() {
 		os.Exit(1)
 	}
 	defer logFile.Close()
-
 	log.SetOutput(logFile)
+
+	// lua stack
+	l := lua.NewState()
+	defer l.Close()
+
+	embeded.HandleLua(l)
 
 	flags, err := ui.ParseFlags()
 	if err != nil {
@@ -29,13 +37,13 @@ func main() {
 	}
 	switch flags.Mode {
 	case ui.Client:
-		ClientProxy(flags)
+		ClientProxy(l, flags)
 	case ui.Server:
-		ServerProxy(flags)
+		ServerProxy(l, flags)
 	}
 }
 
-func ClientProxy(flags *ui.Flags) {
+func ClientProxy(l *lua.LState, flags *ui.Flags) {
 	fromAddress := flags.Dec
 	toAddress := flags.Enc
 
@@ -72,7 +80,7 @@ func ClientProxy(flags *ui.Flags) {
 	}
 }
 
-func ServerProxy(flags *ui.Flags) {
+func ServerProxy(l *lua.LState, flags *ui.Flags) {
 	fromAddress := flags.Enc
 	toAddress := flags.Dec
 

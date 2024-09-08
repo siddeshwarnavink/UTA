@@ -75,8 +75,6 @@ tags
 *.iml
 
 # Go modules
-/go.sum
-/go.mod
 /go.work
 
 # Go generated files

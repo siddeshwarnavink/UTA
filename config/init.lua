@@ -1,11 +1,7 @@
 local crypto = require "crypto"
+local aes = require "algo.aes" -- current standard algorithms will be provided
 
-function encrypt(key, data)
-   return data
-end
+-- if a new and better algorithm comes, we can code that algorithm
+-- here in lua code
 
-function decrypt(key, data)
-   return data
-end
-
-crypto.register("AES", encrypt, decrypt)
+crypto.register("AES", aes.encrypt, aes.decrypt)

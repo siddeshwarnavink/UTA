@@ -77,26 +77,19 @@ func ParseFlags() (*Flags, error) {
 }
 
 func RenderForm(parsedFlags Flags) (Flags, error) {
-
 	const (
-		BrightMagenta = "\033[38;5;205m"
-		Reset         = "\033[0m" // Reset to default color
+		Primary = "\033[38;5;205m"
+		Reset   = "\033[0m"
 	)
 
-	fmt.Println(BrightMagenta +
-		`      ___                       ___     
-     /__/\          ___        /  /\    
-     \  \:\        /  /\      /  /::\   
-      \  \:\      /  /:/     /  /:/\:\  
-  ___  \  \:\    /  /:/     /  /:/~/::\ 
- /__/\  \__\:\  /  /::\    /__/:/ /:/\:\
- \  \:\ /  /:/ /__/:/\:\   \  \:\/:/__\/
-  \  \:\  /:/  \__\/  \:\   \  \::/     
-   \  \:\/:/        \  \:\   \  \:\     
-    \  \::/          \__\/    \  \:\    
-     \__\/                     \__\/    
-	` + Reset)
-	fmt.Println(BrightMagenta + "\033[1m" + "By Code Factort Unlimited" + "\033[1m" + Reset)
+	fmt.Println(Primary +
+		`
+  __  ___________
+ / / / /_  __/ _ |
+/ /_/ / / / / __ |
+\____/ /_/ /_/ |_|
+` + Reset)
+	fmt.Println(Primary + "\033[1m" + "By Code Factort Unlimited" + "\033[1m" + Reset)
 
 	if parsedFlags.Mode == "" {
 		modeChan := make(chan string)

@@ -12,6 +12,7 @@ import (
 
 const multicastAddr = "224.0.0.1:9999" // TODO: Make this dynamic
 const heartbeatInterval = 5 * time.Second
+const peerTimeout = 30 * time.Second
 
 type Peer struct {
 	IP       string // UDP IP of that peer
@@ -43,6 +44,8 @@ func AnnouncePresence(port string) {
 }
 
 func ListenForPeers(peerTable *PeerTable) {
+	go peerTable.cleanupInactivePeers()
+
 	addr, _ := net.ResolveUDPAddr("udp", multicastAddr)
 	conn, _ := net.ListenMulticastUDP("udp", nil, addr)
 	defer conn.Close()
@@ -51,6 +54,22 @@ func ListenForPeers(peerTable *PeerTable) {
 	for {
 		n, src, _ := conn.ReadFromUDP(buf)
 		peerTable.updatePeerTable(src.String(), buf[:n])
+	}
+}
+
+func (pt *PeerTable) cleanupInactivePeers() {
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		pt.mu.Lock()
+		for addr, peer := range pt.peers {
+			if time.Since(peer.LastSeen) > peerTimeout {
+				delete(pt.peers, addr)
+				pt.PrintRoutingTable()
+			}
+		}
+		pt.mu.Unlock()
 	}
 }
 

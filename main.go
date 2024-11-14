@@ -8,6 +8,7 @@ import (
 
 	"github.com/siddeshwarnavink/UTA/embeded"
 	"github.com/siddeshwarnavink/UTA/keyExchange"
+	"github.com/siddeshwarnavink/UTA/p2p"
 	"github.com/siddeshwarnavink/UTA/proxy"
 	"github.com/siddeshwarnavink/UTA/ui"
 	lua "github.com/yuin/gopher-lua"
@@ -35,6 +36,11 @@ func main() {
 		fmt.Println("Error:", err)
 		os.Exit(1)
 	}
+
+	peerTable := p2p.NewPeerTable()
+	go p2p.AnnouncePresence(flags.Dec)
+	go p2p.ListenForPeers(peerTable)
+
 	switch flags.Mode {
 	case ui.Client:
 		ClientProxy(l, flags)
@@ -53,7 +59,7 @@ func ClientProxy(l *lua.LState, flags *ui.Flags) {
 	}
 	defer listener.Close()
 
-	fmt.Printf("Client adapter listening on %s, forwarding to server %s",
+	fmt.Printf("Client adapter listening on %s, forwarding to server %s\n",
 		fromAddress, toAddress)
 
 	for {
@@ -96,7 +102,7 @@ func ServerProxy(l *lua.LState, flags *ui.Flags) {
 	}
 	defer listener.Close()
 
-	fmt.Printf("Server adapter listening on %s, forwarding to server %s",
+	fmt.Printf("Server adapter listening on %s, forwarding to server %s\n",
 		fromAddress, toAddress)
 
 	for {

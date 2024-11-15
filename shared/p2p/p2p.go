@@ -113,7 +113,6 @@ func (pt *PeerTable) PrintRoutingTable() {
 	// pt.mu.Lock()
 	// defer pt.mu.Unlock()
 
-	fmt.Print("\033[H\033[2J") // clear screen
 	fmt.Println("Peer Table")
 
 	t := table.NewWriter()

@@ -7,7 +7,7 @@ func HandleLua(l *lua.LState) {
 	l.PreloadModule("crypto", CryptoLoader)
 	l.PreloadModule("algo.aes", AlogAesLoader)
 
-	if err := l.DoFile("config/init.lua"); err != nil {
+	if err := l.DoFile("adapter/config/init.lua"); err != nil {
 		panic(err)
 	}
 }

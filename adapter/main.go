@@ -6,11 +6,12 @@ import (
 	"net"
 	"os"
 
-	"github.com/siddeshwarnavink/UTA/embeded"
-	"github.com/siddeshwarnavink/UTA/keyExchange"
-	"github.com/siddeshwarnavink/UTA/p2p"
-	"github.com/siddeshwarnavink/UTA/proxy"
-	"github.com/siddeshwarnavink/UTA/ui"
+	"github.com/siddeshwarnavink/UTA/adapter/embeded"
+	"github.com/siddeshwarnavink/UTA/adapter/keyExchange"
+	"github.com/siddeshwarnavink/UTA/adapter/proxy"
+	"github.com/siddeshwarnavink/UTA/shared/p2p"
+	"github.com/siddeshwarnavink/UTA/adapter/ui"
+
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -79,7 +80,7 @@ func ClientProxy(l *lua.LState, flags *ui.Flags) {
 		derivedKey, err := keyExchange.ClientKeyExchange(encryptedConn, flags.Protocol)
 
 		if !proxy.IsUninitialized(derivedKey) {
-			fmt.Printf("\nGot shared key %x\n", derivedKey)
+			fmt.Printf("\nGot p2p key %x\n", derivedKey)
 
 			algo, err := ui.AlgorithmFromString(flags.Algo)
 			if err != nil {
@@ -122,7 +123,7 @@ func ServerProxy(l *lua.LState, flags *ui.Flags) {
 		derivedKey, err := keyExchange.ServerKeyExchange(encryptedConn, flags.Protocol)
 
 		if !proxy.IsUninitialized(derivedKey) {
-			fmt.Printf("\nGot shared key %x\n", derivedKey)
+			fmt.Printf("\nGot p2p key %x\n", derivedKey)
 
 			algo, err := ui.AlgorithmFromString(flags.Algo)
 			if err != nil {

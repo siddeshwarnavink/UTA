@@ -7,7 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/siddeshwarnavink/UTA/embeded"
+	"github.com/siddeshwarnavink/UTA/adapter/embeded"
 )
 
 var Algorithms = []string{

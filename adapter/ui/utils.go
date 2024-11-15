@@ -3,8 +3,8 @@ package ui
 import (
 	"errors"
 
-	"github.com/siddeshwarnavink/UTA/embeded"
-	"github.com/siddeshwarnavink/UTA/keyExchange"
+	"github.com/siddeshwarnavink/UTA/adapter/embeded"
+	"github.com/siddeshwarnavink/UTA/adapter/keyExchange"
 )
 
 type AdapterMode string

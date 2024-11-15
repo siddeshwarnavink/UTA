@@ -9,7 +9,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/siddeshwarnavink/UTA/embeded"
+	"github.com/siddeshwarnavink/UTA/adapter/embeded"
 )
 
 func ProxyHandler(plainConn net.Conn,

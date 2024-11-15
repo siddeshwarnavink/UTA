@@ -7,7 +7,8 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/siddeshwarnavink/UTA/proxy"
+	"github.com/siddeshwarnavink/UTA/adapter/proxy"
+
 	"golang.org/x/crypto/curve25519"
 )
 

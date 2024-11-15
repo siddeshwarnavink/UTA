@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/siddeshwarnavink/UTA/keyExchange"
+	"github.com/siddeshwarnavink/UTA/adapter/keyExchange"
 )
 
 func ParseFlags() (*Flags, error) {

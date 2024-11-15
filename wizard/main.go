@@ -16,7 +16,7 @@ func main() {
 	go p2p.ListenForPeers(peerTable)
 
 	r := gin.Default()
-	r.Static("/", "./wizard/static")
+	r.Static("/", "./wizard/dist")
 
 	r.Run(fmt.Sprintf(":%d", wizardPort))
 }

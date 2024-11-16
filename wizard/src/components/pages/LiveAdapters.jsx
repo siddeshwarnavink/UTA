@@ -1,6 +1,9 @@
+import { faTable } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useState, useEffect } from 'react';
+import { Container, Table } from 'react-bootstrap';
 
-const PeerTable = () => {
+const LiveAdapters = () => {
   const [routingTable, setRoutingTable] = useState({});
 
   useEffect(() => {
@@ -21,13 +24,15 @@ const PeerTable = () => {
   }, []);
 
   return (
-    <div>
-      <h1>Peer Table</h1>
-      <table>
+    <Container>
+      <h3 className="my-4">
+        <FontAwesomeIcon icon={faTable} />{" "}Live Adapters
+      </h3>
+      <Table>
         <thead>
           <tr>
             <th>IP</th>
-            <th>Address</th>
+            <th>Source</th>
             <th>Last Seen</th>
           </tr>
         </thead>
@@ -46,9 +51,9 @@ const PeerTable = () => {
             </tr>
           )}
         </tbody>
-      </table>
-    </div>
+      </Table>
+    </Container>
   );
 }
 
-export default PeerTable;
+export default LiveAdapters;

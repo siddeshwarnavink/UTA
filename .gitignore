@@ -17,9 +17,6 @@
 # Dependency directories
 vendor/
 
-# Go workspace file
-go.work
-
 # Test binaries
 *.test
 
@@ -73,9 +70,6 @@ tags
 # GoLand specific files
 .idea/
 *.iml
-
-# Go modules
-/go.work
 
 # Go generated files
 **/gen/

@@ -38,7 +38,7 @@ func main() {
 
 	r.Static("/static", "./wizard/dist/static")
 
-	r.GET("/", func(c *gin.Context) {
+	r.NoRoute(func(c *gin.Context) {
 		c.File("./wizard/dist/index.html")
 	})
 

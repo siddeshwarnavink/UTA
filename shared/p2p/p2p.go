@@ -128,3 +128,14 @@ func (pt *PeerTable) PrintRoutingTable() {
 	}
 	t.Render()
 }
+
+func (pt *PeerTable) GetRoutingTable() map[string]Peer {
+	pt.mu.Lock()
+	defer pt.mu.Unlock()
+
+	routingTable := make(map[string]Peer)
+	for k, v := range pt.peers {
+		routingTable[k] = v
+	}
+	return routingTable
+}

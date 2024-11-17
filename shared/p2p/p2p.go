@@ -1,9 +1,11 @@
 package p2p
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -12,11 +14,13 @@ import (
 
 const multicastAddr = "224.0.0.1:9999" // TODO: Make this dynamic
 const heartbeatInterval = 5 * time.Second
-const peerTimeout = 30 * time.Second
+const peerTimeout = 10 * time.Second // ideally it should be 30 sec
 
 type Peer struct {
 	IP       string // UDP IP of that peer
-	Address  string // TCP address of the system it is attached to (i.e the Dec flag)
+	FromIP   string // i.e Dec flag
+	ToIP     string // i.e Enc flag
+	Role     string // "adapter-client", "adapter-server", "wizard"
 	LastSeen time.Time
 }
 
@@ -31,14 +35,16 @@ func NewPeerTable() *PeerTable {
 	}
 }
 
-func AnnouncePresence(port string) {
+func AnnouncePresence(role string, fromIP, toIP string) {
 	addr, _ := net.ResolveUDPAddr("udp", multicastAddr)
 	conn, _ := net.DialUDP("udp", nil, addr)
 	defer conn.Close()
 
 	for {
-		message := []byte(port)
-		conn.Write(message)
+		message := fmt.Sprintf("%s,%s,%s", role, fromIP, toIP)
+		messageBytes := []byte(message)
+
+		conn.Write(messageBytes)
 		time.Sleep(heartbeatInterval)
 	}
 }
@@ -73,26 +79,40 @@ func (pt *PeerTable) cleanupInactivePeers() {
 	}
 }
 
+func extractMessage(message string) (string, string, string, error) {
+	parts := strings.Split(message, ",")
+	if len(parts) != 3 {
+		return "", "", "", errors.New("invalid message format: expected 3 parts")
+	}
+
+	role := parts[0]
+	fromIP := parts[1]
+	toIP := parts[2]
+
+	return role, fromIP, toIP, nil
+}
+
 func (pt *PeerTable) updatePeerTable(address string, message []byte) {
 	pt.mu.Lock()
 	defer pt.mu.Unlock()
 
-	peerInfo := string(message)
-	if peerInfo != "" {
-		if _, exists := pt.peers[address]; !exists {
-			pt.peers[address] = Peer{
-				IP:       address,
-				Address:  peerInfo,
-				LastSeen: time.Now(),
-			}
-			pt.PrintRoutingTable()
-		} else {
-			pt.peers[address] = Peer{
-				IP:       address,
-				Address:  pt.peers[address].Address,
-				LastSeen: time.Now(),
-			}
+	role, fromIP, toIP, err := extractMessage(string(message))
+	// TODO: Properly handler error here
+	if err == nil {
+		pt.peers[address] = Peer{
+			IP:       address,
+			Role:     role,
+			FromIP:   fromIP,
+			ToIP:     toIP,
+			LastSeen: time.Now(),
 		}
+
+		if _, exists := pt.peers[address]; !exists {
+			fmt.Printf("Discovered new peer: %s\n", address)
+			pt.PrintRoutingTable()
+		}
+	} else {
+		fmt.Print(err)
 	}
 }
 
@@ -113,17 +133,21 @@ func (pt *PeerTable) PrintRoutingTable() {
 	// pt.mu.Lock()
 	// defer pt.mu.Unlock()
 
-	fmt.Println("Peer Table")
-
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 	t.AppendHeader(table.Row{
-		"Address",
+		"IP",
+		"Role",
+		"From",
+		"To",
 	})
 
 	for _, peer := range pt.peers {
 		t.AppendRow(table.Row{
-			peer.Address,
+			peer.IP,
+			peer.Role,
+			peer.FromIP,
+			peer.ToIP,
 		})
 	}
 	t.Render()

@@ -9,8 +9,8 @@ import (
 	"github.com/siddeshwarnavink/UTA/adapter/embeded"
 	"github.com/siddeshwarnavink/UTA/adapter/keyExchange"
 	"github.com/siddeshwarnavink/UTA/adapter/proxy"
-	"github.com/siddeshwarnavink/UTA/shared/p2p"
 	"github.com/siddeshwarnavink/UTA/adapter/ui"
+	"github.com/siddeshwarnavink/UTA/shared/p2p"
 
 	lua "github.com/yuin/gopher-lua"
 )
@@ -39,7 +39,12 @@ func main() {
 	}
 
 	peerTable := p2p.NewPeerTable()
-	go p2p.AnnouncePresence(flags.Dec)
+
+	if flags.Mode == ui.Client {
+		go p2p.AnnouncePresence("adapter-client", flags.Dec, flags.Enc)
+	} else {
+		go p2p.AnnouncePresence("adapter-server", flags.Dec, flags.Enc)
+	}
 	go p2p.ListenForPeers(peerTable)
 
 	switch flags.Mode {

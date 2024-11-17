@@ -1,27 +1,35 @@
 import { faComputer, faServer, faTable } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useState, useEffect } from 'react';
-import { Container, Table } from 'react-bootstrap';
+import { Alert, Container, Spinner, Table } from 'react-bootstrap';
 
 const LiveAdapters = () => {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [routingTable, setRoutingTable] = useState({});
 
   useEffect(() => {
-    const socket = new WebSocket("ws://localhost:3300/ws/peer-table");
+    const fetchData = async () => {
+      try {
+        const response = await fetch("/api/peer-table");
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status}`);
+        }
+        const result = await response.json();
+        setRoutingTable(result);
+      } catch (err) {
+        console.error(err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
 
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      console.log("peer table", data);
-      setRoutingTable(data);
-    };
+    fetchData();
 
-    socket.onerror = (error) => {
-      console.error("WebSocket error:", error);
-    };
+    const intervalId = setInterval(fetchData, 5000);
 
-    return () => {
-      socket.close();
-    };
+    return () => clearInterval(intervalId);
   }, []);
 
   return (
@@ -29,46 +37,55 @@ const LiveAdapters = () => {
       <h3 className="my-4">
         <FontAwesomeIcon icon={faTable} />{" "}Live Adapters
       </h3>
-      <Table>
-        <thead>
-          <tr>
-            <th>UDP IP</th>
-            <th>Role</th>
-            <th>From IP</th>
-            <th>To IP</th>
-            <th>Last Seen</th>
-          </tr>
-        </thead>
-        <tbody>
-          {Object.keys(routingTable).length > 0 ? (
-            Object.entries(routingTable)
-              .filter(([_, item]) => item.Role !== "wizard")
-              .map(([key, peer]) => (
-                <tr key={key}>
-                  <td>{peer.IP}</td>
-                  <td>{peer.Role === "adapter-client" ? (
-                    <span>
-                      <FontAwesomeIcon icon={faComputer} />{" "}
-                      Client
-                    </span>
-                  ) : peer.Role === "adapter-server" ? (
-                    <span>
-                      <FontAwesomeIcon icon={faServer} />{" "}
-                      Server
-                    </span>
-                  ) : peer.Role}</td>
-                  <td>{peer.FromIP}</td>
-                  <td>{peer.ToIP}</td>
-                  <td>{new Date(peer.LastSeen).toLocaleString()}</td>
-                </tr>
-              ))
-          ) : (
+      {loading ? (
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </Spinner>
+      ) : error ? (
+        <Alert variant="danger">{error}</Alert>
+      ) : (
+        <Table>
+          <thead>
             <tr>
-              <td colSpan="3">No peers available</td>
+              <th>UDP IP</th>
+              <th>Role</th>
+              <th>From IP</th>
+              <th>To IP</th>
+              <th>Last Seen</th>
             </tr>
-          )}
-        </tbody>
-      </Table>
+          </thead>
+          <tbody>
+            {Object.keys(routingTable).length > 0 ? (
+              Object.entries(routingTable)
+                .filter(([_, item]) => item.Role !== "wizard")
+                .map(([key, peer]) => (
+                  <tr key={key}>
+                    <td>{peer.IP}</td>
+                    <td>{peer.Role === "adapter-client" ? (
+                      <span>
+                        <FontAwesomeIcon icon={faComputer} />{" "}
+                        Client
+                      </span>
+                    ) : peer.Role === "adapter-server" ? (
+                      <span>
+                        <FontAwesomeIcon icon={faServer} />{" "}
+                        Server
+                      </span>
+                    ) : peer.Role}</td>
+                    <td>{peer.FromIP}</td>
+                    <td>{peer.ToIP}</td>
+                    <td>{new Date(peer.LastSeen).toLocaleString()}</td>
+                  </tr>
+                ))
+            ) : (
+              <tr>
+                <td colSpan="3">No peers available</td>
+              </tr>
+            )}
+          </tbody>
+        </Table>
+
+      )}
     </Container>
   );
 }

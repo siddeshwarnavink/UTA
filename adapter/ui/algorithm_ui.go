@@ -10,11 +10,7 @@ import (
 	"github.com/siddeshwarnavink/UTA/adapter/embeded"
 )
 
-var Algorithms = []string{
-	"Advanced Encryption Standard(AES)",
-	"ChaCha20",
-	"TwoFish",
-}
+var Algorithms = []string{}
 
 type AlgorithmModel struct {
 	cursor int
@@ -76,6 +72,9 @@ func (m AlgorithmModel) View() string {
 }
 
 func RenderAlgoForm(AlgoChan chan string) {
+	for _, algo := range embeded.CryptoList {
+		Algorithms = append(Algorithms, algo.Name)
+	}
 	go func() {
 		p := tea.NewProgram(AlgorithmModel{})
 		m, err := p.Run()

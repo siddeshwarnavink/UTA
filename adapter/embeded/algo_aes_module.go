@@ -5,11 +5,12 @@ import (
 	"crypto/cipher"
 	"encoding/hex"
 	"errors"
+
 	lua "github.com/yuin/gopher-lua"
 )
 
 func EncryptAES(key, text []byte) (string, error) {
-	block, err := aes.NewCipher(key)
+	block, err := aes.NewCipher(key[:32])
 	if err != nil {
 		return "", err
 	}
@@ -33,35 +34,35 @@ func encryptAES(L *lua.LState) int {
 }
 
 func DecryptAES(key []byte, encryptedText string) (string, error) {
-    ciphertext, err := hex.DecodeString(encryptedText)
-    if err != nil {
-        return "", err
-    }
-    if len(ciphertext) < aes.BlockSize {
-        return "", errors.New("ciphertext too short")
-    }
+	ciphertext, err := hex.DecodeString(encryptedText)
+	if err != nil {
+		return "", err
+	}
+	if len(ciphertext) < aes.BlockSize {
+		return "", errors.New("ciphertext too short")
+	}
 
-    block, err := aes.NewCipher(key)
-    if err != nil {
-        return "", err
-    }
-    iv := ciphertext[:aes.BlockSize]
-    ciphertext = ciphertext[aes.BlockSize:]
-    stream := cipher.NewCFBDecrypter(block, iv)
-    stream.XORKeyStream(ciphertext, ciphertext)
-    return string(ciphertext), nil
+	block, err := aes.NewCipher(key[:32])
+	if err != nil {
+		return "", err
+	}
+	iv := ciphertext[:aes.BlockSize]
+	ciphertext = ciphertext[aes.BlockSize:]
+	stream := cipher.NewCFBDecrypter(block, iv)
+	stream.XORKeyStream(ciphertext, ciphertext)
+	return string(ciphertext), nil
 }
 
 func decryptAES(L *lua.LState) int {
-    key := []byte(L.ToString(1))
-    encryptedText := L.ToString(2)
-    result, err := DecryptAES(key, encryptedText)
-    if err != nil {
-        L.Push(lua.LString(err.Error()))
-    } else {
-        L.Push(lua.LString(result))
-    }
-    return 1
+	key := []byte(L.ToString(1))
+	encryptedText := L.ToString(2)
+	result, err := DecryptAES(key, encryptedText)
+	if err != nil {
+		L.Push(lua.LString(err.Error()))
+	} else {
+		L.Push(lua.LString(result))
+	}
+	return 1
 }
 
 func AlogAesLoader(l *lua.LState) int {

@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/siddeshwarnavink/UTA/adapter/embeded"
-	"github.com/siddeshwarnavink/UTA/adapter/keyExchange"
 	"github.com/siddeshwarnavink/UTA/adapter/proxy"
 	"github.com/siddeshwarnavink/UTA/adapter/ui"
 	"github.com/siddeshwarnavink/UTA/shared/p2p"
@@ -82,10 +81,15 @@ func ClientProxy(l *lua.LState, flags *ui.Flags) {
 		}
 		defer encryptedConn.Close()
 
-		derivedKey, err := keyExchange.ClientKeyExchange(encryptedConn, flags.Protocol)
+		keyalgo, err := ui.KeyAlgorithmFromString(flags.Protocol)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		keyalgo.Key = keyalgo.Generate(encryptedConn)
 
-		if !proxy.IsUninitialized(derivedKey) {
-			fmt.Printf("\nGot p2p key %x\n", derivedKey)
+		if !proxy.IsUninitialized(keyalgo.Key) {
+			fmt.Printf("\nGot shared key %x\n", keyalgo.Key)
 
 			algo, err := ui.AlgorithmFromString(flags.Algo)
 			if err != nil {
@@ -93,7 +97,7 @@ func ClientProxy(l *lua.LState, flags *ui.Flags) {
 				os.Exit(1)
 			}
 
-			go proxy.ProxyHandler(plainConn, encryptedConn, derivedKey, algo)
+			go proxy.ProxyHandler(plainConn, encryptedConn, keyalgo.Key, algo)
 		}
 	}
 }
@@ -125,10 +129,16 @@ func ServerProxy(l *lua.LState, flags *ui.Flags) {
 		}
 		defer plainConn.Close()
 
-		derivedKey, err := keyExchange.ServerKeyExchange(encryptedConn, flags.Protocol)
+		keyalgo, err := ui.KeyAlgorithmFromString(flags.Protocol)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 
-		if !proxy.IsUninitialized(derivedKey) {
-			fmt.Printf("\nGot p2p key %x\n", derivedKey)
+		keyalgo.Key = keyalgo.Generate(encryptedConn)
+
+		if !proxy.IsUninitialized(keyalgo.Key) {
+			fmt.Printf("\nGot shared key %x\n", keyalgo.Key)
 
 			algo, err := ui.AlgorithmFromString(flags.Algo)
 			if err != nil {
@@ -136,7 +146,7 @@ func ServerProxy(l *lua.LState, flags *ui.Flags) {
 				os.Exit(1)
 			}
 
-			go proxy.ProxyHandler(plainConn, encryptedConn, derivedKey, algo)
+			go proxy.ProxyHandler(plainConn, encryptedConn, keyalgo.Key, algo)
 		}
 	}
 }

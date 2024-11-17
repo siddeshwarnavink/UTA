@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-
-	"github.com/siddeshwarnavink/UTA/adapter/keyExchange"
 )
 
 func ParseFlags() (*Flags, error) {
@@ -14,7 +12,7 @@ func ParseFlags() (*Flags, error) {
 	var mode AdapterMode
 	var enc, dec string
 	var algo string
-	var protocol keyExchange.Protocol
+	var protocol string
 
 	i := 0
 	for i < len(args) {
@@ -47,11 +45,10 @@ func ParseFlags() (*Flags, error) {
 			}
 		case "--prot":
 			if i+1 < len(args) {
-				switch args[i+1] {
-				case string(keyExchange.DiffieHellman):
-					protocol = keyExchange.DiffieHellman
-				}
+				protocol = args[i+1]
 				i++
+			} else if enc != "" {
+				return nil, errors.New("missing value for -prot")
 			}
 		default:
 			return nil, fmt.Errorf("unknown flag: %s", arg)
@@ -89,7 +86,7 @@ func RenderForm(parsedFlags Flags) (Flags, error) {
 / /_/ / / / / __ |
 \____/ /_/ /_/ |_|
 ` + Reset)
-	fmt.Println(Primary + "\033[1m" + "By Code Factort Unlimited" + "\033[1m" + Reset)
+	fmt.Println(Primary + "\033[1m" + "By Code Factory Unlimited" + "\033[1m" + Reset)
 
 	if parsedFlags.Mode == "" {
 		modeChan := make(chan string)
@@ -122,7 +119,7 @@ func RenderForm(parsedFlags Flags) (Flags, error) {
 			return parsedFlags, errors.New("key Exchange Protocol not selected")
 		}
 		fmt.Println("---")
-		parsedFlags.Protocol = KeyProtocolFromString(keyProtoResult)
+		parsedFlags.Protocol = keyProtoResult
 	}
 
 	if parsedFlags.Algo == "" {

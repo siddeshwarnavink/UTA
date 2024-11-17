@@ -7,11 +7,10 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/siddeshwarnavink/UTA/adapter/embeded"
 )
 
-var KeyExchangeProtocol = []string{
-	"Diffie Hellman Key Exchange",
-}
+var KeyExchangeProtocol = []string{}
 
 type KeyExchangeProtocolModel struct {
 	cursor int
@@ -74,6 +73,9 @@ func (m KeyExchangeProtocolModel) View() string {
 
 func RenderKeyProtoForm(keyProtoChan chan string) {
 	go func() {
+		for _, entry := range embeded.KeyExchangeList {
+			KeyExchangeProtocol = append(KeyExchangeProtocol, entry.Name)
+		}
 		p := tea.NewProgram(KeyExchangeProtocolModel{})
 		m, err := p.Run()
 		if err != nil {

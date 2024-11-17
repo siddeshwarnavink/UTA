@@ -11,7 +11,7 @@ func HandleLua(l *lua.LState) {
 	// Key exchange
 	l.PreloadModule("keyExchange", KeyExchangeLoader)
 	l.PreloadModule("keyalgo.dh", DiffieHellmanLoader)
-	l.PreloadModule("keyalgo.ecdh", ECDHLoader)
+	l.PreloadModule("keyalgo.rsa", RSAKeyExchangeLoader)
 
 	if err := l.DoFile("adapter/config/init.lua"); err != nil {
 		panic(err)

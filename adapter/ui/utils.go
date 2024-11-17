@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/siddeshwarnavink/UTA/adapter/embeded"
-	"github.com/siddeshwarnavink/UTA/adapter/keyExchange"
 )
 
 type AdapterMode string
@@ -19,7 +18,7 @@ type Flags struct {
 	Enc      string
 	Dec      string
 	Algo     string
-	Protocol keyExchange.Protocol
+	Protocol string
 }
 
 func ModeFromString(s string) AdapterMode {
@@ -39,14 +38,14 @@ func AlgorithmFromString(name string) (*embeded.CryptoAlgo, error) {
 			return &algo, nil
 		}
 	}
-	return nil, errors.New("Crypto algorithm not found")
+	return nil, errors.New("crypto algorithm not found")
 }
 
-func KeyProtocolFromString(s string) keyExchange.Protocol {
-	switch s {
-	case "Diffie Hellman Key Exchange":
-		return keyExchange.DiffieHellman
-	default:
-		return keyExchange.DiffieHellman
+func KeyAlgorithmFromString(s string) (*embeded.KeyExchangeAlgo, error) {
+	for _, protocol := range embeded.KeyExchangeList {
+		if protocol.Name == s {
+			return &protocol, nil
+		}
 	}
+	return nil, errors.New("key exchange algorithm not found")
 }

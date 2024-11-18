@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/siddeshwarnavink/UTA/adapter/embeded"
+	"github.com/siddeshwarnavink/UTA/shared/utils"
 )
 
 func ProxyHandler(plainConn net.Conn,
@@ -40,7 +41,8 @@ func ProxyHandler(plainConn net.Conn,
 			}
 
 			encryptedData := algo.Encrypt(derivedKey, buf[:n])
-			_, err = encryptedConn.Write(encryptedData)
+			formatedData := utils.GenerateDataMessage(string(encryptedData))
+			_, err = encryptedConn.Write(formatedData)
 
 			if err != nil {
 				if errors.Is(err, os.ErrClosed) {
@@ -74,7 +76,8 @@ func ProxyHandler(plainConn net.Conn,
 				return
 			}
 
-			decryptedData := algo.Decrypt(derivedKey, buf[:n])
+			unformatedData, err := utils.GetDataMessage(buf[:n])
+			decryptedData := algo.Decrypt(derivedKey, []byte(unformatedData))
 
 			_, err = plainConn.Write(decryptedData)
 

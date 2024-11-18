@@ -30,7 +30,7 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup) {
 }
 
 func main() {
-	listener, err := net.Listen("tcp", "localhost:10000")
+	listener, err := net.Listen("tcp", "0.0.0.0:10000")
 	if err != nil {
 		fmt.Println("Error starting the server:", err)
 		os.Exit(1)

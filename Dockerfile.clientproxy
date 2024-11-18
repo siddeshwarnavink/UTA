@@ -1,0 +1,27 @@
+FROM ubuntu:20.04
+
+RUN apt-get update && apt-get install -y \
+    wget \
+    iptables \
+    kmod \
+    && rm -rf /var/lib/apt/lists/*
+
+
+RUN wget https://golang.org/dl/go1.23.0.linux-amd64.tar.gz \
+    && tar -C /usr/local -xzf go1.23.0.linux-amd64.tar.gz \
+    && rm go1.23.0.linux-amd64.tar.gz
+
+ENV PATH="/usr/local/go/bin:${PATH}"
+
+WORKDIR /app
+
+COPY . .
+
+RUN go work sync
+
+USER root
+
+RUN modprobe xt_TPROXY
+
+CMD ["go", "run", "./adapter", "--client", "-enc", "server-adapter:9999", "-dec", "server:10000", "--prot", "dhkc", "--algo", "AES"]
+

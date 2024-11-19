@@ -6,5 +6,5 @@ COPY . .
 
 RUN go work sync
 
-CMD ["go", "run", "./adapter", "--client", "-enc", "server-adapter:9999", "-dec", "0.0.0.0:8888", "--prot", "dhkc", "--algo", "AES"]
+CMD ["go", "run", "./adapter", "--client", "-enc", "server-adapter:9999", "-dec", "0.0.0.0:8888", "--prot", "DHKC", "--algo", "AES"]
 

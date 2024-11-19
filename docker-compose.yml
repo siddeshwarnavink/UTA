@@ -1,0 +1,49 @@
+services:
+  client:
+    build:
+      context: ./demo/client-1
+    healthcheck:
+      test: ["CMD", "nc", "-z", "server-adapter", "9999"]
+      interval: 10s
+      retries: 10
+    networks:
+      - adapter-network
+
+  client-adapter:
+    build:
+      dockerfile: Dockerfile.clientproxy
+    depends_on:
+      - server-adapter
+    healthcheck:
+      test: ["CMD", "nc", "-z", "server-adapter", "9999"]
+      interval: 5s
+      retries: 5
+    networks:
+      - adapter-network
+
+  server-adapter:
+    build:
+      context: .
+      dockerfile: Dockerfile.serverproxy
+    ports:
+      - "9999:9999"
+    networks:
+      - adapter-network
+
+  server:
+    build:
+      context: ./demo/server-1
+    networks:
+      - adapter-network
+    depends_on:
+      - server-adapter
+    healthcheck:
+      test: ["CMD", "nc", "-z", "server-adapter", "9999"]
+      interval: 10s
+      retries: 10
+    ports:
+      - "10000:10000"
+
+networks:
+  adapter-network:
+    driver: bridge

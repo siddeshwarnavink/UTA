@@ -7,10 +7,7 @@ A highly customized TCP adapter to port any system to up-to-date security standa
 
 To run the adapter
 
-    go run ./adapter --server -enc 127.0.0.1:9999 -dec 127.0.0.1:10000 --prot DHKC --algo AES
-    go run ./adapter --client -dec 127.0.0.1:8888 -enc 127.0.0.1:9999 --prot DHKC --algo AES
-    go run demo/server.go
-    ruby demo/client.rb
+    docker-compose up 
 
 To build the wizard
 

@@ -1,0 +1,9 @@
+FROM golang:1.23
+
+WORKDIR /app
+
+COPY . .
+
+RUN go work sync
+
+CMD ["go", "run", "./adapter", "--server", "-enc", "0.0.0.0:9999", "-dec", "server:10000", "--prot", "dhkc", "--algo", "AES"]

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"os"
@@ -24,6 +25,9 @@ func main() {
 	}
 	defer logFile.Close()
 	log.SetOutput(logFile)
+
+	multiWriter := io.MultiWriter(os.Stdout, logFile)
+	log.SetOutput(multiWriter)
 
 	// lua stack
 	l := lua.NewState()

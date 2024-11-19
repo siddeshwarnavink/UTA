@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"net"
-	"os"
 	"sync"
+	"time"
 )
 
 func handleConnection(conn net.Conn, wg *sync.WaitGroup) {
@@ -20,7 +20,6 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup) {
 		}
 		fmt.Printf("Received from client: %s\n", string(buffer[:n]))
 
-		// Echo the message back to the client
 		_, err = conn.Write(buffer[:n])
 		if err != nil {
 			fmt.Println("Error writing to connection:", err)
@@ -30,10 +29,18 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup) {
 }
 
 func main() {
-	listener, err := net.Listen("tcp", "localhost:10000")
-	if err != nil {
-		fmt.Println("Error starting the server:", err)
-		os.Exit(1)
+	var listener net.Listener
+	var err error
+
+	for {
+		listener, err = net.Listen("tcp", "0.0.0.0:10000")
+		if err != nil {
+			fmt.Println("Error starting the server:", err)
+			fmt.Println("Retrying in 5 seconds...")
+			time.Sleep(5 * time.Second)
+			continue
+		}
+		break
 	}
 	defer listener.Close()
 

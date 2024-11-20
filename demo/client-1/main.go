@@ -28,9 +28,9 @@ func main() {
 
 	fmt.Printf("Connected to server at %s\n", serverAddress)
 
-	message := "Hello from client!"
+	message := "I'm client!"
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 100; i++ {
 		_, err := conn.Write([]byte(message))
 		if err != nil {
 			fmt.Println("Error sending message:", err)

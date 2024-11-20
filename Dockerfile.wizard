@@ -1,0 +1,25 @@
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+COPY . .
+
+WORKDIR /app/wizard
+
+RUN npm install
+
+FROM busybox
+
+RUN npm run build
+
+FROM golang:1.23-alpine
+WORKDIR /app
+
+COPY . .
+
+COPY --from=builder /app/wizard/dist /app/wizard/dist
+
+RUN go work sync
+
+EXPOSE 3300
+
+CMD ["go", "run", "./wizard"]

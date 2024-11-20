@@ -36,8 +36,17 @@ func NewPeerTable() *PeerTable {
 }
 
 func AnnouncePresence(role string, fromIP, toIP string) {
-	addr, _ := net.ResolveUDPAddr("udp", multicastAddr)
-	conn, _ := net.DialUDP("udp", nil, addr)
+	addr, err := net.ResolveUDPAddr("udp", multicastAddr)
+	if err != nil {
+		fmt.Printf("Error resolving UDP address: %v\n", err)
+		return
+	}
+
+	conn, err := net.DialUDP("udp", nil, addr)
+	if err != nil {
+		fmt.Printf("Error dialing UDP connection: %v\n", err)
+		return
+	}
 	defer conn.Close()
 
 	for {
@@ -52,8 +61,18 @@ func AnnouncePresence(role string, fromIP, toIP string) {
 func ListenForPeers(peerTable *PeerTable) {
 	go peerTable.cleanupInactivePeers()
 
-	addr, _ := net.ResolveUDPAddr("udp", multicastAddr)
-	conn, _ := net.ListenMulticastUDP("udp", nil, addr)
+	addr, err := net.ResolveUDPAddr("udp", multicastAddr)
+	if err != nil {
+		fmt.Printf("Error resolving UDP address: %v\n", err)
+		return
+	}
+
+	conn, err := net.ListenMulticastUDP("udp", nil, addr)
+	if err != nil {
+		fmt.Printf("Error listening multicast: %v\n", err)
+		return
+	}
+
 	defer conn.Close()
 
 	buf := make([]byte, 1024)
@@ -97,8 +116,10 @@ func (pt *PeerTable) updatePeerTable(address string, message []byte) {
 	defer pt.mu.Unlock()
 
 	role, fromIP, toIP, err := extractMessage(string(message))
-	// TODO: Properly handler error here
+
 	if err == nil {
+		_, exists := pt.peers[address]
+
 		pt.peers[address] = Peer{
 			IP:       address,
 			Role:     role,
@@ -107,7 +128,7 @@ func (pt *PeerTable) updatePeerTable(address string, message []byte) {
 			LastSeen: time.Now(),
 		}
 
-		if _, exists := pt.peers[address]; !exists {
+		if !exists {
 			fmt.Printf("Discovered new peer: %s\n", address)
 			pt.PrintRoutingTable()
 		}

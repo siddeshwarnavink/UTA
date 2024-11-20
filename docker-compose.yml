@@ -1,4 +1,15 @@
 services:
+  wizard:
+    build:
+      dockerfile: Dockerfile.wizard
+    ports:
+      - "3300:3300"
+    depends_on:
+          - server-adapter
+          - client-adapter
+    networks:
+          - adapter-network
+
   client:
     build:
       context: ./demo/client-1
@@ -25,8 +36,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.serverproxy
-    ports:
-      - "9999:9999"
     networks:
       - adapter-network
 
@@ -41,8 +50,6 @@ services:
       test: ["CMD", "nc", "-z", "server-adapter", "9999"]
       interval: 10s
       retries: 10
-    ports:
-      - "10000:10000"
 
 networks:
   adapter-network:

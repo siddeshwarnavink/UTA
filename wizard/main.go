@@ -33,4 +33,6 @@ func main() {
 	})
 
 	r.Run(fmt.Sprintf(":%d", wizardPort))
+
+	fmt.Printf("Wizard running on http://localhost:%d\n", wizardPort)
 }

@@ -5,7 +5,17 @@ import (
 	"net"
 	"sync"
 	"time"
+
+	"github.com/bxcodec/faker/v4"
 )
+
+func randomName() string {
+	firstName := faker.FirstName()
+	lastName := faker.LastName()
+
+	fullName := fmt.Sprintf("%s %s", firstName, lastName)
+	return fullName
+}
 
 func handleConnection(conn net.Conn, wg *sync.WaitGroup) {
 	defer wg.Done()
@@ -20,7 +30,8 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup) {
 		}
 		fmt.Printf("Received from client: %s\n", string(buffer[:n]))
 
-		_, err = conn.Write(buffer[:n])
+		randomName := randomName()
+		_, err = conn.Write([]byte(randomName + "\n"))
 		if err != nil {
 			fmt.Println("Error writing to connection:", err)
 			return

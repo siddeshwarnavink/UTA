@@ -44,9 +44,9 @@ func main() {
 	peerTable := p2p.NewPeerTable()
 
 	if flags.Mode == ui.Client {
-		go p2p.AnnouncePresence("adapter-client", flags.Dec, flags.Enc)
+		go p2p.AnnouncePresence(p2p.ClientProxy, flags.Dec, flags.Enc)
 	} else {
-		go p2p.AnnouncePresence("adapter-server", flags.Dec, flags.Enc)
+		go p2p.AnnouncePresence(p2p.ServerProxy, flags.Dec, flags.Enc)
 	}
 	go p2p.ListenForPeers(peerTable)
 

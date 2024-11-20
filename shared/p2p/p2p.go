@@ -1,15 +1,21 @@
 package p2p
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/jedib0t/go-pretty/table"
+)
+
+type PeerRole string
+
+const (
+	ClientProxy PeerRole = "adapter-client"
+	ServerProxy PeerRole = "adapter-server"
+	Wizard      PeerRole = "wizard"
 )
 
 const multicastAddr = "224.0.0.1:9999" // TODO: Make this dynamic
@@ -17,10 +23,10 @@ const heartbeatInterval = 5 * time.Second
 const peerTimeout = 10 * time.Second // ideally it should be 30 sec
 
 type Peer struct {
-	IP       string // UDP IP of that peer
-	FromIP   string // i.e Dec flag
-	ToIP     string // i.e Enc flag
-	Role     string // "adapter-client", "adapter-server", "wizard"
+	IP       string   // UDP IP of that peer
+	FromIP   string   // i.e Dec flag
+	ToIP     string   // i.e Enc flag
+	Role     PeerRole
 	LastSeen time.Time
 }
 
@@ -35,7 +41,7 @@ func NewPeerTable() *PeerTable {
 	}
 }
 
-func AnnouncePresence(role string, fromIP, toIP string) {
+func AnnouncePresence(role PeerRole, fromIP, toIP string) {
 	addr, err := net.ResolveUDPAddr("udp", multicastAddr)
 	if err != nil {
 		fmt.Printf("Error resolving UDP address: %v\n", err)
@@ -50,7 +56,12 @@ func AnnouncePresence(role string, fromIP, toIP string) {
 	defer conn.Close()
 
 	for {
-		message := fmt.Sprintf("%s,%s,%s", role, fromIP, toIP)
+		message, err := DiscoveryMessage(role, fromIP, toIP)
+		if err != nil {
+			fmt.Printf("Error in encode discovery message: %v\n", err)
+			return
+		}
+
 		messageBytes := []byte(message)
 
 		conn.Write(messageBytes)
@@ -98,24 +109,11 @@ func (pt *PeerTable) cleanupInactivePeers() {
 	}
 }
 
-func extractMessage(message string) (string, string, string, error) {
-	parts := strings.Split(message, ",")
-	if len(parts) != 3 {
-		return "", "", "", errors.New("invalid message format: expected 3 parts")
-	}
-
-	role := parts[0]
-	fromIP := parts[1]
-	toIP := parts[2]
-
-	return role, fromIP, toIP, nil
-}
-
 func (pt *PeerTable) updatePeerTable(address string, message []byte) {
 	pt.mu.Lock()
 	defer pt.mu.Unlock()
 
-	role, fromIP, toIP, err := extractMessage(string(message))
+	role, fromIP, toIP, err := ExtractDiscoveryMessageDetails(string(message))
 
 	if err == nil {
 		_, exists := pt.peers[address]

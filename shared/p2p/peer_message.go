@@ -11,7 +11,7 @@ by Sideshwar (who only thinks like web developer btw)
 | 3    | Message length  | 8          |
 | 4    | Akshual message | -          |
 +------------------------+------------+
-| MIN SIZE			     | 12         |
+| MIN SIZE               | 12         |
 +------------------------+------------+
 
 +--------------+------+
@@ -39,6 +39,14 @@ import (
 	"net"
 	"strconv"
 	"strings"
+)
+
+type PeerMsgType int
+
+const (
+	Invalid      PeerMsgType = -1
+	Discovery    PeerMsgType = 0
+	Transmission PeerMsgType = 1
 )
 
 func convertIPv4ToBits(address string) (string, error) {
@@ -112,6 +120,18 @@ func binaryStringToInt(binary string) int {
 	return result
 }
 
+func GetPeerMsgType(bits string) (PeerMsgType, error) {
+	typeBits := bits[:2]
+	switch typeBits {
+	case "00":
+		return Discovery, nil
+	case "01":
+		return Transmission, nil
+	default:
+		return Invalid, fmt.Errorf("Invalid peer message type: %s", typeBits)
+	}
+}
+
 func DiscoveryMessage(role PeerRole, fromIP string, toIP string) (string, error) {
 	msg := "00"
 
@@ -132,13 +152,13 @@ func DiscoveryMessage(role PeerRole, fromIP string, toIP string) (string, error)
 
 		fromIPBits, err := convertIPv4ToBits(fromIP)
 		if err != nil {
-			return "", fmt.Errorf("invalid fromIP: %v", err)
+			return "", fmt.Errorf("invalid from IP: %v", err)
 		}
 		msg += fromIPBits
 
 		toIPBits, err := convertIPv4ToBits(toIP)
 		if err != nil {
-			return "", fmt.Errorf("invalid toIP: %v", err)
+			return "", fmt.Errorf("invalid to IP: %v", err)
 		}
 		msg += toIPBits
 	} else {
@@ -151,6 +171,11 @@ func DiscoveryMessage(role PeerRole, fromIP string, toIP string) (string, error)
 func ExtractDiscoveryMessageDetails(msg string) (PeerRole, string, string, error) {
 	if len(msg) != 108 && len(msg) != 12 {
 		return "", "", "", fmt.Errorf("invalid message size")
+	}
+
+	msgtype, err := GetPeerMsgType(msg)
+	if err != nil || msgtype != Discovery {
+		return "", "", "", fmt.Errorf("not discovery type message")
 	}
 
 	roleBits := msg[2:4]
@@ -170,13 +195,13 @@ func ExtractDiscoveryMessageDetails(msg string) (PeerRole, string, string, error
 		fromIPBits := msg[12:60]
 		fromIP, err := convertBitsToIPv4(fromIPBits)
 		if err != nil {
-			return "", "", "", fmt.Errorf("failed to convert fromIP bits: %v", err)
+			return "", "", "", fmt.Errorf("failed to convert from IP bits: %v", err)
 		}
 
 		toIPBits := msg[60:108]
 		toIP, err := convertBitsToIPv4(toIPBits)
 		if err != nil {
-			return "", "", "", fmt.Errorf("failed to convert toIP bits: %v", err)
+			return "", "", "", fmt.Errorf("failed to convert to IP bits: %v", err)
 		}
 
 		return role, fromIP, toIP, nil

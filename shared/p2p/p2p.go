@@ -23,9 +23,9 @@ const heartbeatInterval = 5 * time.Second
 const peerTimeout = 10 * time.Second // ideally it should be 30 sec
 
 type Peer struct {
-	IP       string   // UDP IP of that peer
-	FromIP   string   // i.e Dec flag
-	ToIP     string   // i.e Enc flag
+	IP       string // UDP IP of that peer
+	FromIP   string // i.e Dec flag
+	ToIP     string // i.e Enc flag
 	Role     PeerRole
 	LastSeen time.Time
 }
@@ -110,28 +110,35 @@ func (pt *PeerTable) cleanupInactivePeers() {
 }
 
 func (pt *PeerTable) updatePeerTable(address string, message []byte) {
-	pt.mu.Lock()
-	defer pt.mu.Unlock()
+	msgtype, err := GetPeerMsgType(string(message))
+	if err != nil {
+		fmt.Printf("Invalid peer message: %s", string(message))
+	}
 
-	role, fromIP, toIP, err := ExtractDiscoveryMessageDetails(string(message))
+	if msgtype == Discovery {
+		pt.mu.Lock()
+		defer pt.mu.Unlock()
 
-	if err == nil {
-		_, exists := pt.peers[address]
+		role, fromIP, toIP, err := ExtractDiscoveryMessageDetails(string(message))
 
-		pt.peers[address] = Peer{
-			IP:       address,
-			Role:     role,
-			FromIP:   fromIP,
-			ToIP:     toIP,
-			LastSeen: time.Now(),
+		if err == nil {
+			_, exists := pt.peers[address]
+
+			pt.peers[address] = Peer{
+				IP:       address,
+				Role:     role,
+				FromIP:   fromIP,
+				ToIP:     toIP,
+				LastSeen: time.Now(),
+			}
+
+			if !exists {
+				fmt.Printf("Discovered new peer: %s\n", address)
+				pt.PrintRoutingTable()
+			}
+		} else {
+			fmt.Print(err)
 		}
-
-		if !exists {
-			fmt.Printf("Discovered new peer: %s\n", address)
-			pt.PrintRoutingTable()
-		}
-	} else {
-		fmt.Print(err)
 	}
 }
 

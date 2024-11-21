@@ -9,18 +9,18 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-var modes = []string{"Client", "Server"}
-
-type ModeModel struct {
-	cursor int
-	choice string
+type mcqModel struct {
+	cursor   int
+	choice   string
+	question string
+	options  []string
 }
 
-func (m ModeModel) Init() tea.Cmd {
+func (m mcqModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m ModeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m mcqModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -28,19 +28,19 @@ func (m ModeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case "enter":
-			m.choice = modes[m.cursor]
+			m.choice = m.options[m.cursor]
 			return m, tea.Quit
 
 		case "down", "j":
 			m.cursor++
-			if m.cursor >= len(modes) {
+			if m.cursor >= len(m.options) {
 				m.cursor = 0
 			}
 
 		case "up", "k":
 			m.cursor--
 			if m.cursor < 0 {
-				m.cursor = len(modes) - 1
+				m.cursor = len(m.options) - 1
 			}
 		}
 	}
@@ -48,43 +48,44 @@ func (m ModeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m ModeModel) View() string {
+func (m mcqModel) View() string {
 	var (
 		focusedStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Bold(true)
 		unfocusedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
 	)
-
 	s := strings.Builder{}
-	s.WriteString("Which mode is this system on?\n\n")
+	s.WriteString("\n\n" + m.question + "\n\n")
 
-	for i := 0; i < len(modes); i++ {
-		if m.cursor == i {
+	for i := 0; i < len(m.options); i++ {
+		if i == m.cursor {
 			s.WriteString(focusedStyle.Render("> "))
-			s.WriteString(focusedStyle.Render(modes[i]))
+			s.WriteString(focusedStyle.Render(m.options[i]))
 		} else {
 			s.WriteString(unfocusedStyle.Render("> "))
-			s.WriteString(unfocusedStyle.Render(modes[i]))
+			s.WriteString(unfocusedStyle.Render(m.options[i]))
 		}
 		s.WriteString("\n")
 	}
-
 	return s.String()
 }
 
-func RenderModeForm(ModeChan chan string) {
+func MCQ(question string, options []string, MCQChan chan string) {
 	go func() {
-		p := tea.NewProgram(ModeModel{})
-
+		model := mcqModel{
+			question: question,
+			options:  options,
+		}
+		p := tea.NewProgram(model)
 		m, err := p.Run()
 		if err != nil {
-			fmt.Println("ERORR from Mode Chooser:", err)
+			fmt.Fprintf(os.Stderr, "could not run program: %v", err)
 			os.Exit(1)
 		}
-
-		if m, ok := m.(ModeModel); ok && m.choice != "" {
-			ModeChan <- m.choice
+		if m, ok := m.(mcqModel); ok && m.choice != "" {
+			MCQChan <- m.choice
 		} else {
-			ModeChan <- "error"
+			MCQChan <- "error"
 		}
 	}()
+
 }

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+
+	"github.com/siddeshwarnavink/UTA/adapter/embeded"
 )
 
 func ParseFlags() (*Flags, error) {
@@ -64,7 +66,6 @@ func ParseFlags() (*Flags, error) {
 		Protocol: protocol,
 	}
 
-	// Assuming RenderForm is a function that validates or processes the flags
 	finalFlag, err := RenderForm(flags)
 	if err != nil {
 		return nil, err
@@ -90,7 +91,7 @@ func RenderForm(parsedFlags Flags) (Flags, error) {
 
 	if parsedFlags.Mode == "" {
 		modeChan := make(chan string)
-		go RenderModeForm(modeChan)
+		go MCQ("Which mode is this system on?", []string{"Client", "Server"}, modeChan)
 		modeResult := <-modeChan
 		if modeResult == "error" {
 			return parsedFlags, errors.New("mode not selected")
@@ -101,7 +102,7 @@ func RenderForm(parsedFlags Flags) (Flags, error) {
 
 	if parsedFlags.Enc == "" && parsedFlags.Dec == "" {
 		portChan := make(chan []string)
-		go RenderPortForm(portChan)
+		go Form("Enter the Connection Addresses", []string{"Unencrypted Connection's Address", "Encrypted Connection's Address"}, portChan)
 		portResult := <-portChan
 		if portResult[0] == "error" {
 			return parsedFlags, errors.New("encrypted end's address not mentioned and unencrypted end's address not mentioned")
@@ -113,7 +114,11 @@ func RenderForm(parsedFlags Flags) (Flags, error) {
 
 	if parsedFlags.Protocol == "" {
 		keyProtoChan := make(chan string)
-		go RenderKeyProtoForm(keyProtoChan)
+		var KeyExchangeProtocol = []string{}
+		for _, entry := range embeded.KeyExchangeList {
+			KeyExchangeProtocol = append(KeyExchangeProtocol, entry.Name)
+		}
+		go MCQ("Which Key Exchange Protocol is being used?", KeyExchangeProtocol, keyProtoChan)
 		keyProtoResult := <-keyProtoChan
 		if keyProtoResult == "error" {
 			return parsedFlags, errors.New("key Exchange Protocol not selected")
@@ -124,7 +129,11 @@ func RenderForm(parsedFlags Flags) (Flags, error) {
 
 	if parsedFlags.Algo == "" {
 		algoChan := make(chan string)
-		go RenderAlgoForm(algoChan)
+		var Algorithms = []string{}
+		for _, entry := range embeded.CryptoList {
+			Algorithms = append(Algorithms, entry.Name)
+		}
+		go MCQ("Which Cryptographic Algorithm to be used?", Algorithms, algoChan)
 		algoResult := <-algoChan
 		if algoResult == "error" {
 			return parsedFlags, errors.New("algorithm not selected")

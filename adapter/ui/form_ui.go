@@ -12,42 +12,40 @@ import (
 )
 
 var (
-	focusedStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
-	blurredStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
-	cursorStyle         = focusedStyle
-	noStyle             = lipgloss.NewStyle()
-	helpStyle           = blurredStyle
-	cursorModeHelpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
-
+	focusedStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+	blurredStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	cursorStyle   = focusedStyle
+	noStyle       = lipgloss.NewStyle()
 	focusedButton = focusedStyle.Render("[ Next ]")
 	blurredButton = fmt.Sprintf("[ %s ]", blurredStyle.Render("Next"))
 )
 
-type PortModel struct {
+type FormModel struct {
 	focusIndex int
 	inputs     []textinput.Model
 	cursorMode cursor.Mode
+	question   string
 }
 
-func initialModel() PortModel {
-	m := PortModel{
-		inputs: make([]textinput.Model, 2),
+func NewFormModel(fields []string, question string) FormModel {
+	m := FormModel{
+		inputs:   make([]textinput.Model, len(fields)),
+		question: question,
 	}
 
 	var t textinput.Model
-	for i := range m.inputs {
+	for i, field := range fields {
 		t = textinput.New()
 		t.Cursor.Style = cursorStyle
 		t.CharLimit = 32
+		t.Placeholder = field
+		t.PromptStyle = blurredStyle
+		t.TextStyle = blurredStyle
 
-		switch i {
-		case 0:
-			t.Placeholder = "Unencrypted Connection's Address?"
+		if i == 0 {
 			t.Focus()
 			t.PromptStyle = focusedStyle
 			t.TextStyle = focusedStyle
-		case 1:
-			t.Placeholder = "Encrypted Connection's Address?"
 		}
 
 		m.inputs[i] = t
@@ -56,18 +54,17 @@ func initialModel() PortModel {
 	return m
 }
 
-func (m PortModel) Init() tea.Cmd {
+func (m FormModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m PortModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m FormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "ctrl+c", "esc":
 			return m, tea.Quit
 
-		// Change cursor mode
 		case "ctrl+r":
 			m.cursorMode++
 			if m.cursorMode > cursor.CursorHide {
@@ -79,16 +76,13 @@ func (m PortModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, tea.Batch(cmds...)
 
-		// Set focus to next input
 		case "tab", "shift+tab", "enter", "up", "down":
 			s := msg.String()
 
-			// Did the user press enter while the submit button was focused?
 			if s == "enter" && m.focusIndex == len(m.inputs) {
 				return m, tea.Quit
 			}
 
-			// Cycle indexes
 			if s == "up" || s == "shift+tab" {
 				m.focusIndex--
 			} else {
@@ -104,13 +98,11 @@ func (m PortModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds := make([]tea.Cmd, len(m.inputs))
 			for i := 0; i <= len(m.inputs)-1; i++ {
 				if i == m.focusIndex {
-					// Set focused state
 					cmds[i] = m.inputs[i].Focus()
 					m.inputs[i].PromptStyle = focusedStyle
 					m.inputs[i].TextStyle = focusedStyle
 					continue
 				}
-				// Remove focused state
 				m.inputs[i].Blur()
 				m.inputs[i].PromptStyle = noStyle
 				m.inputs[i].TextStyle = noStyle
@@ -120,26 +112,22 @@ func (m PortModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	// Handle character input and blinking
 	cmd := m.updateInputs(msg)
-
 	return m, cmd
 }
 
-func (m *PortModel) updateInputs(msg tea.Msg) tea.Cmd {
+func (m *FormModel) updateInputs(msg tea.Msg) tea.Cmd {
 	cmds := make([]tea.Cmd, len(m.inputs))
-
-	// Only text inputs with Focus() set will respond, so it's safe to simply
-	// update all of them here without any further logic.
 	for i := range m.inputs {
 		m.inputs[i], cmds[i] = m.inputs[i].Update(msg)
 	}
-
 	return tea.Batch(cmds...)
 }
 
-func (m PortModel) View() string {
+func (m FormModel) View() string {
 	var b strings.Builder
+
+	b.WriteString("\n\n" + m.question + "\n\n")
 
 	for i := range m.inputs {
 		b.WriteString(m.inputs[i].View())
@@ -157,8 +145,7 @@ func (m PortModel) View() string {
 	return b.String()
 }
 
-// Add a method to retrieve the input values
-func (m PortModel) GetInputValues() []string {
+func (m FormModel) GetInputValues() []string {
 	values := make([]string, len(m.inputs))
 	for i, input := range m.inputs {
 		values[i] = input.Value()
@@ -166,25 +153,24 @@ func (m PortModel) GetInputValues() []string {
 	return values
 }
 
-func RenderPortForm(PortChan chan []string) {
+func Form(question string, fields []string, FormChan chan []string) {
 	go func() {
-		p := tea.NewProgram(initialModel())
+		p := tea.NewProgram(NewFormModel(fields, question))
 
-		// Run the program and get the final PortModel
 		finalModel, err := p.Run()
 		if err != nil {
 			fmt.Printf("could not start program: %s\n", err)
 			os.Exit(1)
 		}
 
-		if m, ok := finalModel.(PortModel); ok {
+		if m, ok := finalModel.(FormModel); ok {
 			Ports := m.GetInputValues()
 			if Ports[0] == "" && Ports[1] == "" {
-				PortChan <- []string{"error"}
+				FormChan <- []string{"error"}
 			}
-			PortChan <- Ports
+			FormChan <- Ports
 		} else {
-			PortChan <- []string{"error"}
+			FormChan <- []string{"error"}
 		}
 	}()
 }

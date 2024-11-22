@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/siddeshwarnavink/UTA/adapter/embeded"
+	"github.com/siddeshwarnavink/UTA/shared/p2p"
 	"github.com/siddeshwarnavink/UTA/shared/utils"
 )
 
@@ -20,6 +21,12 @@ func ProxyHandler(plainConn net.Conn,
 
 	var wg sync.WaitGroup
 	wg.Add(2)
+
+	peerConn, err := p2p.GetMulticastConn()
+	if err != nil {
+		panic(err)
+	}
+	defer peerConn.Close()
 
 	// plain -> encrypted
 	go func() {
@@ -54,6 +61,10 @@ func ProxyHandler(plainConn net.Conn,
 				plainConn.Close()
 				return
 			}
+
+			peerMsg, err :=	p2p.TransmissionMessage(p2p.ClientProxy, true)
+			peerMsgBytes := []byte(peerMsg)
+			peerConn.Write(peerMsgBytes)
 		}
 	}()
 
@@ -91,6 +102,10 @@ func ProxyHandler(plainConn net.Conn,
 				encryptedConn.Close()
 				return
 			}
+
+			peerMsg, err :=	p2p.TransmissionMessage(p2p.ClientProxy, false)
+			peerMsgBytes := []byte(peerMsg)
+			peerConn.Write(peerMsgBytes)
 		}
 	}()
 

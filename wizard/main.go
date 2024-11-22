@@ -13,6 +13,7 @@ const wizardPort = 3300 // TODO: Make this dynamic via flag
 
 func main() {
 	peerTable := p2p.NewPeerTable()
+
 	go p2p.AnnouncePresence(p2p.Wizard, "", "")
 	go p2p.ListenForPeers(peerTable)
 

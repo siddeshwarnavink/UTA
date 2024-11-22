@@ -29,6 +29,11 @@ by Sideshwar (who only thinks like web developer btw)
 | Wizard         | 10   |
 +----------------+------+
 
+Discovery message contains 2 IPv4 - fromIP, toIP
+
+Transmission message contains only one bit,
+0 - sent, 1 - received
+
 */
 
 package p2p
@@ -135,16 +140,11 @@ func GetPeerMsgType(bits string) (PeerMsgType, error) {
 func DiscoveryMessage(role PeerRole, fromIP string, toIP string) (string, error) {
 	msg := "00"
 
-	roleMap := map[PeerRole]string{
-		ClientProxy: "00",
-		ServerProxy: "01",
-		Wizard:      "10",
+	roleBits, err := getRoleBits(role)
+	if err != nil {
+		return "", err
 	}
 
-	roleBits, ok := roleMap[role]
-	if !ok {
-		roleBits = roleMap["wizard"]
-	}
 	msg += roleBits
 
 	if roleBits != "10" {
@@ -178,20 +178,12 @@ func ExtractDiscoveryMessageDetails(msg string) (PeerRole, string, string, error
 		return "", "", "", fmt.Errorf("not discovery type message")
 	}
 
-	roleBits := msg[2:4]
-	var role PeerRole
-	switch roleBits {
-	case "00":
-		role = ClientProxy
-	case "01":
-		role = ServerProxy
-	case "10":
-		role = Wizard
-	default:
-		return "", "", "", fmt.Errorf("unknown role bits: %s", roleBits)
+	role, err := getRoleFromBits(msg)
+	if err != nil {
+		return "", "", "", err
 	}
 
-	if role != "wizard" {
+	if role != Wizard {
 		fromIPBits := msg[12:60]
 		fromIP, err := convertBitsToIPv4(fromIPBits)
 		if err != nil {
@@ -208,4 +200,77 @@ func ExtractDiscoveryMessageDetails(msg string) (PeerRole, string, string, error
 	} else {
 		return role, "", "", nil
 	}
+}
+
+func getRoleBits(role PeerRole) (string, error) {
+	roleMap := map[PeerRole]string{
+		ClientProxy: "00",
+		ServerProxy: "01",
+		Wizard:      "10",
+	}
+
+	roleBits, ok := roleMap[role]
+	if !ok {
+		return "", fmt.Errorf("Invalid role: %s", role)
+	}
+	return roleBits, nil
+}
+
+func getRoleFromBits(msg string) (PeerRole, error) {
+	roleBits := msg[2:4]
+
+	var role PeerRole
+	switch roleBits {
+	case "00":
+		role = ClientProxy
+	case "01":
+		role = ServerProxy
+	case "10":
+		role = Wizard
+	default:
+		return InvalidRole, fmt.Errorf("unknown role for bit: %s", roleBits)
+	}
+
+	return role, nil
+}
+
+func TransmissionMessage(role PeerRole, sent bool) (string, error) {
+	msg := "01"
+
+	roleBits, err := getRoleBits(role)
+	if err != nil {
+		return "", err
+	}
+
+	msg += roleBits
+
+	msg += "000000001" // 1-bit
+
+	if sent {
+		msg += "0"
+	} else {
+		msg += "1"
+	}
+
+	return msg, nil
+}
+
+func ExtractTransmissionMessageDetails(msg string) (PeerRole, bool, error) {
+	if len(msg) != 14 {
+		return InvalidRole, false,  fmt.Errorf("invalid message size")
+	}
+
+	msgtype, err := GetPeerMsgType(msg)
+	if err != nil || msgtype != Transmission {
+		return InvalidRole, false, fmt.Errorf("not transmission type message")
+	}
+
+	role, err := getRoleFromBits(msg)
+	if err != nil {
+		return InvalidRole, false, err
+	}
+
+	transmissionBit :=  string(msg[len(msg)-1])
+
+	return role, transmissionBit == "0", err
 }

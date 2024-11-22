@@ -33,7 +33,7 @@ func TestBitsToIP(t *testing.T) {
 }
 
 func TestDiscoveryMessageForClientAdapter(t *testing.T) {
-	msg, err := DiscoveryMessage("client-adapter", "192.168.1.1:3000", "192.168.1.2:4000")
+	msg, err := DiscoveryMessage(ClientProxy, "192.168.1.1:3000", "192.168.1.2:4000")
 
 	if err != nil {
 		t.Errorf("DiscoveryMessage() error = %v", err)
@@ -49,7 +49,7 @@ func TestDiscoveryMessageForClientAdapter(t *testing.T) {
 
 
 func TestDiscoveryMessageForWizard(t *testing.T) {
-	msg, err := DiscoveryMessage("wizard", "", "")
+	msg, err := DiscoveryMessage(Wizard, "", "")
 
 	if err != nil {
 		t.Errorf("DiscoveryMessage() error = %v", err)
@@ -71,7 +71,7 @@ func TestExtractDiscoveryMessageDetailsForClientProxy(t *testing.T) {
 		return
 	}
 
-	if role != "client-adapter" {
+	if role != ClientProxy {
 		t.Errorf("ExtractDiscoveryMessageDetails() incorrect role = %s", role)
 		return
 	}
@@ -95,7 +95,7 @@ func TestExtractDiscoveryMessageDetailsForWizard(t *testing.T) {
 		return
 	}
 
-	if role != "wizard" {
+	if role != Wizard {
 		t.Errorf("ExtractDiscoveryMessageDetails() incorrect role = %s", role)
 		return
 	}
@@ -107,6 +107,40 @@ func TestExtractDiscoveryMessageDetailsForWizard(t *testing.T) {
 
 	if toIP != "" {
 		t.Errorf("ExtractDiscoveryMessageDetails() incorrect toIP = %s", role)
+		return
+	}
+}
+
+func TestTransmissionMessage(t *testing.T) {
+	msg, err := TransmissionMessage(ClientProxy, true)
+
+	if err != nil {
+		t.Errorf("TransmissionMessage() error = %v", err)
+		return
+	}
+
+	// 01-00-000000001-0
+	if msg != "01000000000010" {
+		t.Errorf("TransmissionMessage() incorrect message = %s",msg)
+		return
+	}
+}
+
+func TestExtractTransmissionMessageDetails(t *testing.T) {
+	role, sent, err := ExtractTransmissionMessageDetails("01000000000010")
+
+	if err != nil {
+		t.Errorf("ExtractTransmissionMessageDetails() error = %v", err)
+		return
+	}
+
+	if role != ClientProxy {
+		t.Errorf("ExtractTransmissionMessageDetails() incorrect role = %s",role)
+		return
+	}
+
+	if !sent {
+		t.Errorf("ExtractTransmissionMessageDetails() incorrect transmission state")
 		return
 	}
 }

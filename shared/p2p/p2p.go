@@ -13,6 +13,7 @@ import (
 type PeerRole string
 
 const (
+	InvalidRole PeerRole = "invalid"
 	ClientProxy PeerRole = "adapter-client"
 	ServerProxy PeerRole = "adapter-server"
 	Wizard      PeerRole = "wizard"
@@ -29,7 +30,6 @@ type Peer struct {
 	Role     PeerRole
 	LastSeen time.Time
 }
-
 type PeerTable struct {
 	mu    sync.Mutex
 	peers map[string]Peer
@@ -41,17 +41,25 @@ func NewPeerTable() *PeerTable {
 	}
 }
 
-func AnnouncePresence(role PeerRole, fromIP, toIP string) {
+// use this for dialing only
+func GetMulticastConn() (*net.UDPConn, error) {
 	addr, err := net.ResolveUDPAddr("udp", multicastAddr)
 	if err != nil {
-		fmt.Printf("Error resolving UDP address: %v\n", err)
-		return
+		return nil, fmt.Errorf("Error resolving UDP address: %v\n", err)
 	}
 
 	conn, err := net.DialUDP("udp", nil, addr)
 	if err != nil {
-		fmt.Printf("Error dialing UDP connection: %v\n", err)
-		return
+		return nil, fmt.Errorf("Error dialing UDP connection: %v\n", err)
+	}
+
+	return conn, nil
+}
+
+func AnnouncePresence(role PeerRole, fromIP, toIP string) {
+	conn, err := GetMulticastConn()
+	if err != nil {
+		panic(err)
 	}
 	defer conn.Close()
 
@@ -70,25 +78,24 @@ func AnnouncePresence(role PeerRole, fromIP, toIP string) {
 }
 
 func ListenForPeers(peerTable *PeerTable) {
-	go peerTable.cleanupInactivePeers()
-
 	addr, err := net.ResolveUDPAddr("udp", multicastAddr)
 	if err != nil {
-		fmt.Printf("Error resolving UDP address: %v\n", err)
-		return
+		panic(err)
 	}
 
 	conn, err := net.ListenMulticastUDP("udp", nil, addr)
 	if err != nil {
-		fmt.Printf("Error listening multicast: %v\n", err)
-		return
+		panic(err)
 	}
-
 	defer conn.Close()
 
 	buf := make([]byte, 1024)
 	for {
-		n, src, _ := conn.ReadFromUDP(buf)
+		n, src, err := conn.ReadFromUDP(buf)
+		if err != nil {
+			fmt.Printf("Error reading from UDP: %v\n", err)
+			continue
+		}
 		peerTable.updatePeerTable(src.String(), buf[:n])
 	}
 }
@@ -139,6 +146,8 @@ func (pt *PeerTable) updatePeerTable(address string, message []byte) {
 		} else {
 			fmt.Print(err)
 		}
+	} else if msgtype == Transmission  {
+		fmt.Printf("Got Transmission message %s\n", string(message))
 	}
 }
 

@@ -1,14 +1,23 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net"
 	"time"
 )
 
 func main() {
+	local := flag.Bool("local", false, "Run outside docker")
+	flag.Parse()
+
 	serverIP := "client-adapter"
 	serverPort := 8888
+
+	if *local {
+		serverIP = "127.0.0.1"
+	}
+
 	serverAddress := fmt.Sprintf("%s:%d", serverIP, serverPort)
 
 	var conn net.Conn

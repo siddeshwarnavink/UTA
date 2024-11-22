@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net"
 	"sync"
@@ -40,11 +41,20 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup) {
 }
 
 func main() {
+	local := flag.Bool("local", false, "Run outside docker")
+	flag.Parse()
+
+	addr := "0.0.0.0:10000"
+
+	if *local {
+		addr = "127.0.0.1:10000"
+	}
+
 	var listener net.Listener
 	var err error
 
 	for {
-		listener, err = net.Listen("tcp", "0.0.0.0:10000")
+		listener, err = net.Listen("tcp", addr)
 		if err != nil {
 			fmt.Println("Error starting the server:", err)
 			fmt.Println("Retrying in 5 seconds...")
@@ -55,7 +65,7 @@ func main() {
 	}
 	defer listener.Close()
 
-	fmt.Println("Server is listening on port 10000")
+	fmt.Printf("Server is listening to %s\n", addr)
 
 	var wg sync.WaitGroup
 

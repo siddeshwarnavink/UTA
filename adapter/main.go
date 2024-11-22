@@ -43,22 +43,28 @@ func main() {
 
 	peerTable := p2p.NewPeerTable()
 
-	if flags.Mode == ui.Client {
-		go p2p.AnnouncePresence(p2p.ClientProxy, flags.Dec, flags.Enc)
-	} else {
-		go p2p.AnnouncePresence(p2p.ServerProxy, flags.Dec, flags.Enc)
+	peerConn, err := p2p.GetMulticastConn()
+	if err != nil {
+		panic(err)
 	}
-	go p2p.ListenForPeers(peerTable)
+	defer peerConn.Close()
+
+	if flags.Mode == ui.Client {
+		go p2p.AnnouncePresence(*peerConn, p2p.ClientProxy, flags.Dec, flags.Enc)
+	} else {
+		go p2p.AnnouncePresence(*peerConn, p2p.ServerProxy, flags.Dec, flags.Enc)
+	}
+	p2p.ListenForPeers(peerTable)
 
 	switch flags.Mode {
 	case ui.Client:
-		ClientProxy(l, flags)
+		ClientProxy(l, flags, *peerConn)
 	case ui.Server:
-		ServerProxy(l, flags)
+		ServerProxy(l, flags, *peerConn)
 	}
 }
 
-func ClientProxy(l *lua.LState, flags *ui.Flags) {
+func ClientProxy(l *lua.LState, flags *ui.Flags, peerConn net.UDPConn) {
 	fromAddress := flags.Dec
 	toAddress := flags.Enc
 
@@ -101,12 +107,12 @@ func ClientProxy(l *lua.LState, flags *ui.Flags) {
 				os.Exit(1)
 			}
 
-			go proxy.ProxyHandler(plainConn, encryptedConn, keyalgo.Key, algo)
+			go proxy.ProxyHandler(plainConn, encryptedConn, keyalgo.Key, algo, peerConn)
 		}
 	}
 }
 
-func ServerProxy(l *lua.LState, flags *ui.Flags) {
+func ServerProxy(l *lua.LState, flags *ui.Flags, peerConn net.UDPConn) {
 	fromAddress := flags.Enc
 	toAddress := flags.Dec
 
@@ -150,7 +156,7 @@ func ServerProxy(l *lua.LState, flags *ui.Flags) {
 				os.Exit(1)
 			}
 
-			go proxy.ProxyHandler(plainConn, encryptedConn, keyalgo.Key, algo)
+			go proxy.ProxyHandler(plainConn, encryptedConn, keyalgo.Key, algo, peerConn)
 		}
 	}
 }

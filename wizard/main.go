@@ -20,11 +20,29 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
+type WsDataType int
+
+const (
+	PeerTableData    WsDataType = 1
+	TransmissionData WsDataType = 2
+)
+
+type WsData struct {
+	PeerTable    *map[string]p2p.Peer `json:"peerTable,omitempty"`
+	Transmission *p2p.TransmissionMsg `json:"transmission,omitempty"`
+}
+
 func main() {
 	peerTable := p2p.NewPeerTable()
 
-	go p2p.AnnouncePresence(p2p.Wizard, "", "")
-	go p2p.ListenForPeers(peerTable)
+	peerConn, err := p2p.GetMulticastConn()
+	if err != nil {
+		panic(err)
+	}
+	defer peerConn.Close()
+
+	go p2p.AnnouncePresence(*peerConn, p2p.Wizard, "", "")
+	ch := p2p.ListenForPeers(peerTable)
 
 	r := gin.Default()
 
@@ -34,6 +52,8 @@ func main() {
 			return
 		}
 
+		msgChan := make(chan WsData)
+
 		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upgrade connection"})
@@ -41,21 +61,35 @@ func main() {
 		}
 		defer conn.Close()
 
+		go func() {
+			for val := range ch {
+				msgChan <- WsData{Transmission: &val, PeerTable: nil}
+			}
+		}()
+
+		go func() {
+			for {
+				routingTable := peerTable.GetRoutingTable()
+				msgChan <- WsData{PeerTable: &routingTable, Transmission: nil}
+				time.Sleep(5 * time.Second)
+			}
+		}()
+
 		for {
-			routingTable := peerTable.GetRoutingTable()
-			data, err := json.Marshal(routingTable)
-			if err != nil {
-				fmt.Printf("Error in converting to JSON: %v\n", err)
-				break
-			}
+			select {
+			case msg := <-msgChan:
+				json, err := json.Marshal(msg)
+				if err != nil {
+					fmt.Printf("Error in converting to JSON: %v\n", err)
+					break
+				}
 
-			if err := conn.WriteMessage(websocket.TextMessage, []byte(data)); err != nil {
-				fmt.Printf("Error in writing message: %v\n", err)
-				break
+				if err := conn.WriteMessage(websocket.TextMessage, json); err != nil {
+					fmt.Printf("Error in writing message: %v\n", err)
+					break
+				}
 			}
-			time.Sleep(5 * time.Second)
 		}
-
 	})
 
 	r.Static("/static", "./wizard/dist/static")

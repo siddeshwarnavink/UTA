@@ -30,6 +30,12 @@ type Peer struct {
 	Role     PeerRole  `json:"role"`
 	LastSeen time.Time `json:"last_seen"`
 }
+
+type TransmissionMsg struct {
+	IP   string `json:"ip"`
+	Send bool   `json:"sent"`
+}
+
 type PeerTable struct {
 	mu    sync.Mutex
 	peers map[string]Peer
@@ -56,13 +62,7 @@ func GetMulticastConn() (*net.UDPConn, error) {
 	return conn, nil
 }
 
-func AnnouncePresence(role PeerRole, fromIP, toIP string) {
-	conn, err := GetMulticastConn()
-	if err != nil {
-		panic(err)
-	}
-	defer conn.Close()
-
+func AnnouncePresence(conn net.UDPConn, role PeerRole, fromIP, toIP string) {
 	for {
 		message, err := DiscoveryMessage(role, fromIP, toIP)
 		if err != nil {
@@ -77,27 +77,55 @@ func AnnouncePresence(role PeerRole, fromIP, toIP string) {
 	}
 }
 
-func ListenForPeers(peerTable *PeerTable) {
-	addr, err := net.ResolveUDPAddr("udp", multicastAddr)
-	if err != nil {
-		panic(err)
-	}
+func ListenForPeers(peerTable *PeerTable) chan TransmissionMsg {
+	ch := make(chan TransmissionMsg)
 
-	conn, err := net.ListenMulticastUDP("udp", nil, addr)
-	if err != nil {
-		panic(err)
-	}
-	defer conn.Close()
-
-	buf := make([]byte, 1024)
-	for {
-		n, src, err := conn.ReadFromUDP(buf)
+	go func() {
+		addr, err := net.ResolveUDPAddr("udp", multicastAddr)
 		if err != nil {
-			fmt.Printf("Error reading from UDP: %v\n", err)
-			continue
+			panic(err)
 		}
-		peerTable.updatePeerTable(src.String(), buf[:n])
-	}
+
+		conn, err := net.ListenMulticastUDP("udp", nil, addr)
+		if err != nil {
+			panic(err)
+		}
+		defer conn.Close()
+
+		buf := make([]byte, 1024)
+		for {
+			n, src, err := conn.ReadFromUDP(buf)
+			if err != nil {
+				fmt.Printf("Error reading from UDP: %v\n", err)
+				continue
+			}
+			address := src.String()
+
+			message := string(buf[:n])
+			msgtype, err := GetPeerMsgType(message)
+			if err != nil {
+				fmt.Printf("Invalid peer message: %s", message)
+			}
+
+			peerTable.updatePeerTable(address, message, msgtype)
+
+			if msgtype == Transmission {
+				_, sent, err := ExtractTransmissionMessageDetails(message)
+				if err == nil {
+					chmsg := TransmissionMsg{
+						IP:   address,
+						Send: sent,
+					}
+					ch <- chmsg
+				}
+			}
+
+		}
+
+		close(ch)
+	}()
+
+	return ch
 }
 
 func (pt *PeerTable) cleanupInactivePeers() {
@@ -116,12 +144,7 @@ func (pt *PeerTable) cleanupInactivePeers() {
 	}
 }
 
-func (pt *PeerTable) updatePeerTable(address string, message []byte) {
-	msgtype, err := GetPeerMsgType(string(message))
-	if err != nil {
-		fmt.Printf("Invalid peer message: %s", string(message))
-	}
-
+func (pt *PeerTable) updatePeerTable(address string, message string, msgtype PeerMsgType) {
 	if msgtype == Discovery {
 		pt.mu.Lock()
 		defer pt.mu.Unlock()
@@ -146,8 +169,6 @@ func (pt *PeerTable) updatePeerTable(address string, message []byte) {
 		} else {
 			fmt.Print(err)
 		}
-	} else if msgtype == Transmission  {
-		fmt.Printf("Got Transmission message %s\n", string(message))
 	}
 }
 

@@ -17,16 +17,11 @@ import (
 func ProxyHandler(plainConn net.Conn,
 	encryptedConn net.Conn,
 	derivedKey []byte,
-	algo *embeded.CryptoAlgo) {
+	algo *embeded.CryptoAlgo,
+	peerConn net.UDPConn) {
 
 	var wg sync.WaitGroup
 	wg.Add(2)
-
-	peerConn, err := p2p.GetMulticastConn()
-	if err != nil {
-		panic(err)
-	}
-	defer peerConn.Close()
 
 	// plain -> encrypted
 	go func() {
@@ -62,7 +57,7 @@ func ProxyHandler(plainConn net.Conn,
 				return
 			}
 
-			peerMsg, err :=	p2p.TransmissionMessage(p2p.ClientProxy, true)
+			peerMsg, err := p2p.TransmissionMessage(p2p.ClientProxy, true)
 			peerMsgBytes := []byte(peerMsg)
 			peerConn.Write(peerMsgBytes)
 		}
@@ -103,7 +98,7 @@ func ProxyHandler(plainConn net.Conn,
 				return
 			}
 
-			peerMsg, err :=	p2p.TransmissionMessage(p2p.ClientProxy, false)
+			peerMsg, err := p2p.TransmissionMessage(p2p.ClientProxy, false)
 			peerMsgBytes := []byte(peerMsg)
 			peerConn.Write(peerMsgBytes)
 		}

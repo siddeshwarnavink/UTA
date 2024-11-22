@@ -1,4 +1,4 @@
-import { faComputer, faServer, faTable } from '@fortawesome/free-solid-svg-icons';
+import { faComputer, faServer, faTable, faUpload, faDownload } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useState, useEffect } from 'react';
 import { Alert, Container, Spinner, Table } from 'react-bootstrap';
@@ -7,6 +7,7 @@ const LiveAdapters = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [routingTable, setRoutingTable] = useState({});
+  const [transmission, setTransmission] = useState(null);
 
   useEffect(() => {
     let ws;
@@ -16,9 +17,22 @@ const LiveAdapters = () => {
       ws.onmessage = (event) => {
         try {
           const parsedData = JSON.parse(event.data);
-          setError(null);
-          setRoutingTable(parsedData);
-          setLoading(false);
+          if ("peerTable" in parsedData && parsedData.peerTable !== null) {
+            console.log("peerTable", parsedData.peerTable)
+            setError(null);
+            setLoading(false);
+            setRoutingTable(parsedData.peerTable);
+            setTransmission(null);
+          } else if ("transmission" in parsedData && parsedData.transmission !== null) {
+            console.log("transmission", parsedData.transmission)
+            setTransmission(prevState => {
+              if (prevState != null) {
+                return { ...prevState, [parsedData.transmission.ip]: parsedData.transmission.sent }
+              } else {
+                return { [parsedData.transmission.ip]: parsedData.transmission.sent }
+              }
+            });
+          }
         } catch (err) {
           console.error("Error parsing message:", err);
         }
@@ -26,6 +40,7 @@ const LiveAdapters = () => {
 
       ws.onerror = (event) => {
         setError("WebSocket encountered an error.");
+        console.error(event);
       };
     } catch (err) {
       setError("WebSocket initialization failed.");
@@ -54,6 +69,7 @@ const LiveAdapters = () => {
           <thead>
             <tr>
               <th>UDP IP</th>
+              <th></th>
               <th>Role</th>
               <th>From IP</th>
               <th>To IP</th>
@@ -67,6 +83,15 @@ const LiveAdapters = () => {
                 .map(([key, peer]) => (
                   <tr key={key}>
                     <td>{peer.ip}</td>
+                    <td>
+                      {(transmission !== null && peer.ip in transmission) ?
+                        transmission[peer.ip] ? (
+                          <FontAwesomeIcon icon={faUpload} />
+                        ) : (
+                          <FontAwesomeIcon icon={faDownload} />
+                        )
+                        : null}
+                    </td>
                     <td>{peer.role === "adapter-client" ? (
                       <span>
                         <FontAwesomeIcon icon={faComputer} />{" "}
@@ -90,7 +115,6 @@ const LiveAdapters = () => {
             )}
           </tbody>
         </Table>
-
       )}
     </Container>
   );

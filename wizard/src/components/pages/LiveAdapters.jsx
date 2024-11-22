@@ -9,27 +9,33 @@ const LiveAdapters = () => {
   const [routingTable, setRoutingTable] = useState({});
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch("/api/peer-table");
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status}`);
+    let ws;
+    try {
+      ws = new WebSocket('ws://localhost:3300/ws');
+
+      ws.onmessage = (event) => {
+        try {
+          const parsedData = JSON.parse(event.data);
+          setError(null);
+          setRoutingTable(parsedData);
+          setLoading(false);
+        } catch (err) {
+          console.error("Error parsing message:", err);
         }
-        const result = await response.json();
-        setRoutingTable(result);
-      } catch (err) {
-        console.error(err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
+      };
+
+      ws.onerror = (event) => {
+        setError("WebSocket encountered an error.");
+      };
+    } catch (err) {
+      setError("WebSocket initialization failed.");
     }
 
-    fetchData();
-
-    const intervalId = setInterval(fetchData, 5000);
-
-    return () => clearInterval(intervalId);
+    return () => {
+      if (ws) {
+        ws.close();
+      }
+    };
   }, []);
 
   return (
@@ -57,24 +63,24 @@ const LiveAdapters = () => {
           <tbody>
             {Object.keys(routingTable).length > 0 ? (
               Object.entries(routingTable)
-                .filter(([_, item]) => item.Role !== "wizard")
+                .filter(([_, item]) => item.role !== "wizard")
                 .map(([key, peer]) => (
                   <tr key={key}>
-                    <td>{peer.IP}</td>
-                    <td>{peer.Role === "adapter-client" ? (
+                    <td>{peer.ip}</td>
+                    <td>{peer.role === "adapter-client" ? (
                       <span>
                         <FontAwesomeIcon icon={faComputer} />{" "}
                         Client
                       </span>
-                    ) : peer.Role === "adapter-server" ? (
+                    ) : peer.role === "adapter-server" ? (
                       <span>
                         <FontAwesomeIcon icon={faServer} />{" "}
                         Server
                       </span>
-                    ) : peer.Role}</td>
-                    <td>{peer.FromIP}</td>
-                    <td>{peer.ToIP}</td>
-                    <td>{new Date(peer.LastSeen).toLocaleString()}</td>
+                    ) : peer.role}</td>
+                    <td>{peer.from_ip}</td>
+                    <td>{peer.to_ip}</td>
+                    <td>{new Date(peer.last_seen).toLocaleString()}</td>
                   </tr>
                 ))
             ) : (

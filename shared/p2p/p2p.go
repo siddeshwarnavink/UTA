@@ -24,11 +24,11 @@ const heartbeatInterval = 5 * time.Second
 const peerTimeout = 10 * time.Second // ideally it should be 30 sec
 
 type Peer struct {
-	IP       string // UDP IP of that peer
-	FromIP   string // i.e Dec flag
-	ToIP     string // i.e Enc flag
-	Role     PeerRole
-	LastSeen time.Time
+	IP       string    `json:"ip"`
+	FromIP   string    `json:"from_ip"`
+	ToIP     string    `json:"to_ip"`
+	Role     PeerRole  `json:"role"`
+	LastSeen time.Time `json:"last_seen"`
 }
 type PeerTable struct {
 	mu    sync.Mutex

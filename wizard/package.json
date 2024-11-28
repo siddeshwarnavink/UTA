@@ -8,6 +8,7 @@
     "build": "rsbuild build"
   },
   "dependencies": {
+    "@dagrejs/dagre": "^1.1.4",
     "@fortawesome/free-solid-svg-icons": "^6.6.0",
     "@fortawesome/react-fontawesome": "^0.2.2",
     "@xyflow/react": "^12.3.5",

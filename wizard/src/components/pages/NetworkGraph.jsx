@@ -1,29 +1,56 @@
-import { useCallback, useEffect } from 'react';
-import { Container } from 'react-bootstrap';
+import { useCallback, useEffect, useRef } from 'react';
 import {
   ReactFlow,
   Background,
   useNodesState,
   useEdgesState,
-  addEdge,
+  addEdge
 } from '@xyflow/react';
-
+import Dagre from '@dagrejs/dagre';
 import '@xyflow/react/dist/base.css';
 
 import ServerNode from '../graph/ServerNode';
 import ClientNode from '../graph/ClientNode';
 
 const NetworkGraph = ({ routingTable, transmission }) => {
+  const flowRef = useRef(null);
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
+  const layoutHandler = (nodes, edges) => {
+    const g = new Dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
+    g.setGraph({ rankdir: "LR", ranksep: 330 });
+
+    edges.forEach((edge) => g.setEdge(edge.source, edge.target));
+    nodes.forEach((node) =>
+      g.setNode(node.id, {
+        ...node,
+        width: node.measured?.width ?? 120,
+        height: node.measured?.height ?? 120,
+      }),
+    );
+
+    Dagre.layout(g);
+
+    return nodes.map((node) => {
+      const position = g.node(node.id);
+
+      const x = position.x - (node.measured?.width ?? 0) / 2;
+      const y = position.y - (node.measured?.height ?? 0) / 2;
+
+      return { ...node, position: { x, y } };
+    });
+  };
+
   useEffect(() => {
-    const newNodes = [...nodes], newEdges = [...edges];
+    let newNodes = [...nodes], newEdges = [...edges], update = false;
 
     if (Object.keys(routingTable).length > 0) {
       Object.entries(routingTable)
         .filter(([_, item]) => item.role !== "wizard")
         .forEach(([_, peer]) => {
+          update = true;
+
           // TCP IP of actual server/client whatever I'm processing.
           const id = peer.role === "adapter-server" ? peer.from_ip : peer.to_ip;
 
@@ -45,10 +72,19 @@ const NetworkGraph = ({ routingTable, transmission }) => {
           }
         });
 
+
+      if (update) {
+        newNodes = layoutHandler(newNodes, newEdges);
+
         setNodes(newNodes);
         setEdges(newEdges);
+
+        window.requestAnimationFrame(() => {
+          flowRef.current.fitView();
+        });
+      }
     }
-  }, [routingTable, transmission])
+  }, [routingTable]);
 
   const onConnect = useCallback(
     (params) => setEdges((eds) => addEdge(params, eds)),
@@ -58,6 +94,7 @@ const NetworkGraph = ({ routingTable, transmission }) => {
   return (
     <div style={{ width: '100vw', height: '100vh' }}>
       <ReactFlow
+        ref={flowRef}
         fitView
         nodes={nodes}
         edges={edges}

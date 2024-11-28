@@ -257,7 +257,7 @@ func TransmissionMessage(role PeerRole, sent bool) (string, error) {
 
 func ExtractTransmissionMessageDetails(msg string) (PeerRole, bool, error) {
 	if len(msg) != 14 {
-		return InvalidRole, false,  fmt.Errorf("invalid message size")
+		return InvalidRole, false, fmt.Errorf("invalid message size")
 	}
 
 	msgtype, err := GetPeerMsgType(msg)
@@ -270,7 +270,7 @@ func ExtractTransmissionMessageDetails(msg string) (PeerRole, bool, error) {
 		return InvalidRole, false, err
 	}
 
-	transmissionBit :=  string(msg[len(msg)-1])
+	transmissionBit := string(msg[len(msg)-1])
 
 	return role, transmissionBit == "0", err
 }

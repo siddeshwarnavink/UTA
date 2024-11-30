@@ -3,6 +3,7 @@ import { BrowserRouter, Outlet, Route, Routes } from 'react-router-dom';
 import { Alert, Spinner } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
+import './App.css'
 import LiveAdapters from './components/pages/LiveAdapters';
 import TheNavbar from './components/layout/TheNavbar';
 import NetworkGraph from './components/pages/NetworkGraph'

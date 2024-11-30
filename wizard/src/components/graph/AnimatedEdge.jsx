@@ -1,13 +1,15 @@
-import { BaseEdge, getSmoothStepPath } from '@xyflow/react';
+import { getSmoothStepPath } from '@xyflow/react';
 
 const AnimatedEdge = ({
   id,
   sourceX,
   sourceY,
+  sourcePosition,
   targetX,
   targetY,
-  sourcePosition,
   targetPosition,
+  style,
+  markerEnd,
 }) => {
   const [edgePath] = getSmoothStepPath({
     sourceX,
@@ -19,13 +21,23 @@ const AnimatedEdge = ({
   });
 
   return (
-    <>
-      <BaseEdge id={id} path={edgePath} />
-      <circle r="7" fill="#66BB6A">
-        <animateMotion dur="2s" repeatCount="indefinite" path={edgePath} />
-      </circle>
-    </>
+    <g>
+      <path
+        id={id}
+        d={edgePath}
+        style={{
+          ...style,
+          stroke: 'black',
+          strokeWidth: 2,
+          strokeDasharray: '8, 6',
+          strokeLinecap: 'round',
+          strokeLinejoin: 'round',
+          animation: 'dashmove 1s linear infinite', // in App.css
+          fill: 'none',
+        }}
+        markerEnd={markerEnd}
+      />
+    </g>
   );
-}
-
+};
 export default AnimatedEdge;

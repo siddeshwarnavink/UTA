@@ -94,9 +94,12 @@ const NetworkGraph = ({ routingTable, transmission }) => {
       Object.keys(transmission).forEach(ip => {
         setEdges(prevEdges => {
           return prevEdges.map(edge => {
-            if (transmission && edge.id.indexOf(ip) !== 0 && transmission[ip]) {
-              console.log("edge data flow");
-              return { ...edge, type: "dataFlow" }
+            if (transmission && edge.id.indexOf(ip) !== 0) {
+              if (transmission[ip]) {
+                return { ...edge, type: "dataFlow" }
+              } else {
+                return { ...edge, type: "smoothstep" }
+              }
             }
             return edge;
           });

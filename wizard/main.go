@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -32,6 +33,8 @@ type WsData struct {
 	Transmission *p2p.TransmissionMsg `json:"transmission,omitempty"`
 }
 
+var transmissions = sync.Map{} // ip: boolean
+
 func main() {
 	peerTable := p2p.NewPeerTable()
 
@@ -52,6 +55,7 @@ func main() {
 			return
 		}
 
+		transmissionChan := make(chan p2p.TransmissionMsg)
 		msgChan := make(chan WsData)
 
 		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
@@ -61,8 +65,41 @@ func main() {
 		}
 		defer conn.Close()
 
+		// if transmissionChan is idle for 5 seconds flush cache
+		idleTimeout := 5 * time.Second
+		go func() {
+			timer := time.NewTimer(idleTimeout)
+			defer timer.Stop()
+
+			for {
+				select {
+				case <-transmissionChan:
+					// if !timer.Stop() {
+					// 	<-timer.C
+					// }
+					timer.Reset(idleTimeout)
+				case <-timer.C:
+					cleanupIp := []string{}
+					transmissions.Range(func(ip, _ interface{}) bool {
+						val := p2p.TransmissionMsg{IP: ip.(string), Send: false}
+						msgChan <- WsData{Transmission: &val, PeerTable: nil}
+
+						cleanupIp = append(cleanupIp, ip.(string))
+						return true
+					})
+					for _, ip := range cleanupIp {
+						transmissions.Delete(ip)
+					}
+					timer.Reset(idleTimeout)
+					return
+				}
+			}
+		}()
+
 		go func() {
 			for val := range ch {
+				transmissions.Store(val.IP, val.Send)
+				transmissionChan <- val
 				msgChan <- WsData{Transmission: &val, PeerTable: nil}
 			}
 		}()

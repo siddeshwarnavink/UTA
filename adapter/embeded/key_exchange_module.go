@@ -52,10 +52,21 @@ func registerKeyExchange(l *lua.LState) int {
 	return 0
 }
 
+// YET TO BE IMPLEMENTED
+func getKeyExchangeNames(l *lua.LState) int {
+	tbl := l.NewTable()
+	for i, algo := range KeyExchangeList {
+		tbl.RawSetInt(i+1, lua.LString(algo.Name))
+	}
+	l.Push(tbl)
+	return 1
+}
+
 // KeyExchangeLoader is a function that loads the key exchange module in the lua state
 func KeyExchangeLoader(l *lua.LState) int {
 	var exports = map[string]lua.LGFunction{
 		"register": registerKeyExchange,
+		"list":     getKeyExchangeNames,
 	}
 
 	mod := l.SetFuncs(l.NewTable(), exports)

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import {
   ReactFlow,
   Background,
@@ -11,9 +11,9 @@ import '@xyflow/react/dist/base.css';
 
 import ServerNode from '../graph/ServerNode';
 import ClientNode from '../graph/ClientNode';
+import AnimatedEdge from '../graph/AnimatedEdge';
 
 const NetworkGraph = ({ routingTable, transmission }) => {
-  const flowRef = useRef(null);
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
@@ -42,19 +42,21 @@ const NetworkGraph = ({ routingTable, transmission }) => {
     });
   };
 
-  useEffect(() => {
-    let newNodes = [...nodes], newEdges = [...edges], update = false;
+  const tableLength = useMemo(() => Object.keys(routingTable).length, [routingTable]);
 
-    if (Object.keys(routingTable).length > 0) {
+  useEffect(() => {
+    if (nodes.length !== tableLength && tableLength > 0) {
+      let newNodes = [...nodes], newEdges = [...edges], update = false;
+
       Object.entries(routingTable)
         .filter(([_, item]) => item.role !== "wizard")
         .forEach(([_, peer]) => {
-          update = true;
-
           // TCP IP of actual server/client whatever I'm processing.
           const id = peer.role === "adapter-server" ? peer.from_ip : peer.to_ip;
 
           if (!newNodes.find(n => n.id === id)) {
+            console.log("pushing new node");
+            update = true;
             newNodes.push({
               id,
               type: peer.role === "adapter-server" ? "server" : "client",
@@ -64,27 +66,44 @@ const NetworkGraph = ({ routingTable, transmission }) => {
               },
               data: { ...peer }
             })
+          }
+
+          const edgeId = peer.from_ip + "-" + peer.to_ip;
+          if (!newEdges.find(e => e.id === edgeId)) {
+            console.log("pushing new edge");
+            update = true;
             newEdges.push({
-              id: peer.from_ip + "-" + peer.to_ip,
+              id: edgeId,
+              type: transmission && transmission.find(t => edgeId.indexOf(t.ip) !== 0) ? "dataFlow" : "smoothstep",
               source: peer.from_ip,
-              target: peer.to_ip
+              target: peer.to_ip,
             })
           }
         });
 
-
       if (update) {
         newNodes = layoutHandler(newNodes, newEdges);
-
         setNodes(newNodes);
         setEdges(newEdges);
-
-        window.requestAnimationFrame(() => {
-          flowRef.current.fitView();
-        });
       }
     }
-  }, [routingTable]);
+  }, [tableLength]);
+
+  useEffect(() => {
+    if (transmission) {
+      Object.keys(transmission).forEach(ip => {
+        setEdges(prevEdges => {
+          return prevEdges.map(edge => {
+            if (transmission && edge.id.indexOf(ip) !== 0 && transmission[ip]) {
+              console.log("edge data flow");
+              return { ...edge, type: "dataFlow" }
+            }
+            return edge;
+          });
+        });
+      });
+    }
+  }, [transmission]);
 
   const onConnect = useCallback(
     (params) => setEdges((eds) => addEdge(params, eds)),
@@ -94,7 +113,6 @@ const NetworkGraph = ({ routingTable, transmission }) => {
   return (
     <div style={{ width: '100vw', height: '100vh' }}>
       <ReactFlow
-        ref={flowRef}
         fitView
         nodes={nodes}
         edges={edges}
@@ -104,6 +122,9 @@ const NetworkGraph = ({ routingTable, transmission }) => {
         nodeTypes={{
           server: ServerNode,
           client: ClientNode
+        }}
+        edgeTypes={{
+          dataFlow: AnimatedEdge
         }}
       >
         <Background variant="dots" gap={12} size={1} />

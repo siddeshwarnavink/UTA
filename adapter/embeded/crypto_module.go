@@ -71,9 +71,20 @@ func registerCrypto(l *lua.LState) int {
 	return 0
 }
 
+// YET TO BE IMPLEMENTED
+func getCryptoNames(l *lua.LState) int {
+	tbl := l.NewTable()
+	for i, algo := range CryptoList {
+		tbl.RawSetInt(i+1, lua.LString(algo.Name))
+	}
+	l.Push(tbl)
+	return 1
+}
+
 func CryptoLoader(l *lua.LState) int {
 	var exports = map[string]lua.LGFunction{
 		"register": registerCrypto,
+		"list":     getCryptoNames,
 	}
 
 	mod := l.SetFuncs(l.NewTable(), exports)

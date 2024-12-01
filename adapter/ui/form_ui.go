@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -153,24 +154,22 @@ func (m FormModel) GetInputValues() []string {
 	return values
 }
 
-func Form(question string, fields []string, FormChan chan []string) {
-	go func() {
-		p := tea.NewProgram(NewFormModel(fields, question))
+func Form(question string, fields []string) ([]string, error) {
+	p := tea.NewProgram(NewFormModel(fields, question))
 
-		finalModel, err := p.Run()
-		if err != nil {
-			fmt.Printf("could not start program: %s\n", err)
-			os.Exit(1)
-		}
+	finalModel, err := p.Run()
+	if err != nil {
+		fmt.Printf("could not start program: %s\n", err)
+		os.Exit(1)
+	}
 
-		if m, ok := finalModel.(FormModel); ok {
-			Ports := m.GetInputValues()
-			if Ports[0] == "" && Ports[1] == "" {
-				FormChan <- []string{"error"}
-			}
-			FormChan <- Ports
-		} else {
-			FormChan <- []string{"error"}
+	if m, ok := finalModel.(FormModel); ok {
+		Ports := m.GetInputValues()
+		if Ports[0] == "" && Ports[1] == "" {
+			return []string{}, errors.New("No Input Provided")
 		}
-	}()
+		return Ports, nil
+	} else {
+		return []string{}, errors.New("No Input Provided")
+	}
 }

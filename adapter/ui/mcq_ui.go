@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -69,23 +70,20 @@ func (m mcqModel) View() string {
 	return s.String()
 }
 
-func MCQ(question string, options []string, MCQChan chan string) {
-	go func() {
-		model := mcqModel{
-			question: question,
-			options:  options,
-		}
-		p := tea.NewProgram(model)
-		m, err := p.Run()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "could not run program: %v", err)
-			os.Exit(1)
-		}
-		if m, ok := m.(mcqModel); ok && m.choice != "" {
-			MCQChan <- m.choice
-		} else {
-			MCQChan <- "error"
-		}
-	}()
-
+func MCQ(question string, options []string) (string, error) {
+	model := mcqModel{
+		question: question,
+		options:  options,
+	}
+	p := tea.NewProgram(model)
+	m, err := p.Run()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "could not run program: %v", err)
+		os.Exit(1)
+	}
+	if m, ok := m.(mcqModel); ok && m.choice != "" {
+		return m.choice, nil
+	} else {
+		return "", errors.New("No Option Selected")
+	}
 }

@@ -90,53 +90,45 @@ func RenderForm(parsedFlags Flags) (Flags, error) {
 	fmt.Println(Primary + "\033[1m" + "By Code Factory Unlimited" + "\033[1m" + Reset)
 
 	if parsedFlags.Mode == "" {
-		modeChan := make(chan string)
-		go MCQ("Which mode is this system on?", []string{"Client", "Server"}, modeChan)
-		modeResult := <-modeChan
-		if modeResult == "error" {
-			return parsedFlags, errors.New("mode not selected")
+		modeResult, err := MCQ("Which mode is this system on?", []string{"Client", "Server"})
+		if err != nil {
+			return parsedFlags, err
 		}
 		fmt.Println("---")
 		parsedFlags.Mode = ModeFromString(modeResult)
 	}
 
 	if parsedFlags.Enc == "" && parsedFlags.Dec == "" {
-		portChan := make(chan []string)
-		go Form("Enter the Connection Addresses", []string{"Unencrypted Connection's Address", "Encrypted Connection's Address"}, portChan)
-		portResult := <-portChan
-		if portResult[0] == "error" {
-			return parsedFlags, errors.New("encrypted end's address not mentioned and unencrypted end's address not mentioned")
+		portResult, err := Form("Enter the Connection Addresses", []string{"Unencrypted Connection's Address", "Encrypted Connection's Address"})
+		if err != nil {
+			return parsedFlags, err
 		}
 		fmt.Println("---")
-		parsedFlags.Enc = portResult[1]
 		parsedFlags.Dec = portResult[0]
+		parsedFlags.Enc = portResult[1]
 	}
 
 	if parsedFlags.Protocol == "" {
-		keyProtoChan := make(chan string)
 		var KeyExchangeProtocol = []string{}
 		for _, entry := range embeded.KeyExchangeList {
 			KeyExchangeProtocol = append(KeyExchangeProtocol, entry.Name)
 		}
-		go MCQ("Which Key Exchange Protocol is being used?", KeyExchangeProtocol, keyProtoChan)
-		keyProtoResult := <-keyProtoChan
-		if keyProtoResult == "error" {
-			return parsedFlags, errors.New("key Exchange Protocol not selected")
+		keyProtoResult, err := MCQ("Which Key Exchange Protocol is being used?", KeyExchangeProtocol)
+		if err != nil {
+			return parsedFlags, err
 		}
 		fmt.Println("---")
 		parsedFlags.Protocol = keyProtoResult
 	}
 
 	if parsedFlags.Algo == "" {
-		algoChan := make(chan string)
 		var Algorithms = []string{}
 		for _, entry := range embeded.CryptoList {
 			Algorithms = append(Algorithms, entry.Name)
 		}
-		go MCQ("Which Cryptographic Algorithm to be used?", Algorithms, algoChan)
-		algoResult := <-algoChan
-		if algoResult == "error" {
-			return parsedFlags, errors.New("algorithm not selected")
+		algoResult, err := MCQ("Which Cryptographic Algorithm to be used?", Algorithms)
+		if err != nil {
+			return parsedFlags, err
 		}
 		fmt.Println("---")
 		parsedFlags.Algo = algoResult

@@ -7,7 +7,7 @@ import (
 )
 
 type UIQuestion struct {
-	// TODO ADD NAME:Name        string
+	Name        string
 	Question    string
 	Options     []string
 	PlaceHolder string
@@ -18,11 +18,12 @@ type UIQuestion struct {
 var UIQuestionList []UIQuestion
 
 func registerUIQuestion(l *lua.LState) int {
-	question := l.CheckString(1)
-	options := l.CheckTable(2)
-	placeholder := l.CheckString(3)
-	answer := l.CheckString(4)
-	renderFunc := l.CheckFunction(5)
+	name := l.CheckString(1)
+	question := l.CheckString(2)
+	options := l.CheckTable(3)
+	placeholder := l.CheckString(4)
+	answer := l.CheckString(5)
+	renderFunc := l.CheckFunction(6)
 
 	var opts []string
 	options.ForEach(func(_, value lua.LValue) {
@@ -55,6 +56,7 @@ func registerUIQuestion(l *lua.LState) int {
 	}
 
 	UIQuestionList = append(UIQuestionList, UIQuestion{
+		Name:        name,
 		Question:    question,
 		Options:     opts,
 		PlaceHolder: placeholder,
@@ -65,15 +67,7 @@ func registerUIQuestion(l *lua.LState) int {
 	return 0
 }
 
-// func (u UIQuestion) Render() string {
-// 	return u.RenderFunc(u.Question, u.Options)
-// }
-
-// func (u UIQuestion) GetAnswer() string {
-// 	return u.Answer
-// }
-
-func UIQuestionLoader(l *lua.LState) int {
+func UILoader(l *lua.LState) int {
 	var exports = map[string]lua.LGFunction{
 		"new": registerUIQuestion,
 	}

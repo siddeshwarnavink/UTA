@@ -107,7 +107,7 @@ func mcq(L *lua.LState) int {
 	return 1
 }
 
-func MCQLoader(l *lua.LState) int {
+func UIMCQLoader(l *lua.LState) int {
 	var exports = map[string]lua.LGFunction{
 		"new": mcq,
 	}

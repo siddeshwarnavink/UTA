@@ -87,7 +87,7 @@ func (m QuestionModel) View() string {
 func form(L *lua.LState) int {
 	question := L.ToString(1)
 	luaTable := L.ToTable(2)
-	var options []string{}
+	options := []string{}
 	luaTable.ForEach(func(_, value lua.LValue) {
 		options = append(options, value.String())
 	})

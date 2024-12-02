@@ -13,7 +13,11 @@ func HandleLua(l *lua.LState) {
 	l.PreloadModule("keyalgo.dh", DiffieHellmanLoader)
 	l.PreloadModule("keyalgo.rsa", RSAKeyExchangeLoader)
 
-	if err := l.DoFile("./config/init.lua"); err != nil {
+	l.PreloadModule("ui", UILoader)
+	// l.PreloadModule("ui.question", UIQuestionLoader)
+	l.PreloadModule("ui.mcq", UIMCQLoader)
+
+	if err := l.DoFile("adapter/config/init.lua"); err != nil {
 		panic(err)
 	}
 }

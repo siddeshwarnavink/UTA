@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+
+	"github.com/siddeshwarnavink/UTA/adapter/embeded"
 )
 
 func ParseFlags() (*Flags, error) {
@@ -87,73 +89,70 @@ func RenderForm(parsedFlags Flags) (Flags, error) {
 ` + Reset)
 	fmt.Println(Primary + "\033[1m" + "By Code Factory Unlimited" + "\033[1m" + Reset)
 
-	//!OLD METHOD TO CALL UI
-	// if parsedFlags.Mode == "" {
-	// 	modeResult, err := MCQ("Which mode is this system on?", []string{"Client", "Server"})
-	// 	if err != nil {
-	// 		return parsedFlags, err
-	// 	}
-	// 	fmt.Println("---")
-	// 	parsedFlags.Mode = ModeFromString(modeResult)
-	// }
+	if parsedFlags.Mode == "" {
+		for _, i := range embeded.UIQuestionList {
+			if i.Name == "MODE" {
+				modeResult, err := i.RenderFunc(i.Question, i.Options, i.PlaceHolder)
+				if err != nil {
+					return parsedFlags, err
+				}
+				fmt.Println("---")
+				parsedFlags.Mode = ModeFromString(modeResult)
+			}
+		}
+	}
 
-	//!NEW METHOD TO CALL UI BUT NOT WORKING AS INTENDED
-	// if parsedFlags.Mode == "" {
-	// 	for _, i := range embeded.UIQuestionList {
-	// 		if i.Name == "Mode" {
-	// 			modeResult := i.RenderFunc(i.Question, i.Options, i.PlaceHolder)
-	// 			// if err != nil {
-	// 			// 	return parsedFlags, err
-	// 			// }
-	// 			fmt.Println("---")
-	// 			parsedFlags.Mode = ModeFromString(modeResult)
-	// 		}
-	// 	}
-	// }
+	if parsedFlags.Dec == "" {
+		for _, i := range embeded.UIQuestionList {
+			if i.Name == "UNENCRYPTED_ADDRESS" {
+				decResult, err := i.RenderFunc(i.Question, i.Options, i.PlaceHolder)
+				if err != nil {
+					return parsedFlags, err
+				}
+				fmt.Println("---")
+				parsedFlags.Dec = decResult
+			}
+		}
+	}
 
-	//! OLD METHOD TO CALL UI
-	// if parsedFlags.Dec == "" {
-	// 	DecResult, err := Question("Enter the Unencrypted Connection's Address", "127.0.0.1:10000")
-	// 	if err != nil {
-	// 		return parsedFlags, err
-	// 	}
-	// 	fmt.Println("---")
-	// 	parsedFlags.Dec = DecResult
-	// }
+	if parsedFlags.Enc == "" {
+		for _, i := range embeded.UIQuestionList {
+			if i.Name == "ENCRYPTED_ADDRESS" {
+				encResult, err := i.RenderFunc(i.Question, i.Options, i.PlaceHolder)
+				if err != nil {
+					return parsedFlags, err
+				}
+				fmt.Println("---")
+				parsedFlags.Enc = encResult
+			}
+		}
+	}
 
-	// if parsedFlags.Enc == "" {
-	// 	EncResult, err := Question("Enter the Encrypted Connection's Address", "127.0.0.1:9999")
-	// 	if err != nil {
-	// 		return parsedFlags, err
-	// 	}
-	// 	fmt.Println("---")
-	// 	parsedFlags.Enc = EncResult
-	// }
+	if parsedFlags.Protocol == "" {
+		for _, i := range embeded.UIQuestionList {
+			if i.Name == "KEY_EXCHANGE" {
+				keyProtoResult, err := i.RenderFunc(i.Question, i.Options, i.PlaceHolder)
+				if err != nil {
+					return parsedFlags, err
+				}
+				fmt.Println("---")
+				parsedFlags.Protocol = keyProtoResult
+			}
+		}
+	}
 
-	// if parsedFlags.Protocol == "" {
-	// 	var KeyExchangeProtocol = []string{}
-	// 	for _, entry := range embeded.KeyExchangeList {
-	// 		KeyExchangeProtocol = append(KeyExchangeProtocol, entry.Name)
-	// 	}
-	// 	keyProtoResult, err := MCQ("Which Key Exchange Protocol is being used?", KeyExchangeProtocol)
-	// 	if err != nil {
-	// 		return parsedFlags, err
-	// 	}
-	// 	fmt.Println("---")
-	// 	parsedFlags.Protocol = keyProtoResult
-	// }
+	if parsedFlags.Algo == "" {
+		for _, i := range embeded.UIQuestionList {
+			if i.Name == "ENCRYPTION" {
+				algoResult, err := i.RenderFunc(i.Question, i.Options, i.PlaceHolder)
+				if err != nil {
+					return parsedFlags, err
+				}
+				fmt.Println("---")
+				parsedFlags.Algo = algoResult
+			}
+		}
+	}
 
-	// if parsedFlags.Algo == "" {
-	// 	var Algorithms = []string{}
-	// 	for _, entry := range embeded.CryptoList {
-	// 		Algorithms = append(Algorithms, entry.Name)
-	// 	}
-	// 	algoResult, err := MCQ("Which Cryptographic Algorithm to be used?", Algorithms)
-	// 	if err != nil {
-	// 		return parsedFlags, err
-	// 	}
-	// 	fmt.Println("---")
-	// 	parsedFlags.Algo = algoResult
-	// }
 	return parsedFlags, nil
 }

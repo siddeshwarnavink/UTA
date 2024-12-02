@@ -10,23 +10,11 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-func Question(question string, options []string, placeholder string) (string, error) {
-	p := tea.NewProgram(initialModel(question, placeholder))
-	model, err := p.Run()
-	if err != nil {
-		return "", err
-	}
-	if qModel, ok := model.(QuestionModel); ok {
-		return qModel.textInput.Value(), nil
-	}
-	return "", fmt.Errorf("could not get the answer")
-}
-
 type (
 	errMsg error
 )
 
-type QuestionModel struct {
+type FormModel struct {
 	textInput textinput.Model
 	err       error
 	question  string
@@ -36,7 +24,7 @@ var focusedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 var cursorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("208"))
 
 // Function to initialize the model with any question and placeholder
-func initialModel(question, placeholder string) QuestionModel {
+func initialModel(question, placeholder string) FormModel {
 	ti := textinput.New()
 	ti.Placeholder = placeholder
 	ti.Focus()
@@ -45,18 +33,18 @@ func initialModel(question, placeholder string) QuestionModel {
 	ti.TextStyle = focusedStyle
 	ti.CursorStyle = cursorStyle // Set the style of the cursor
 
-	return QuestionModel{
+	return FormModel{
 		textInput: ti,
 		err:       nil,
 		question:  question,
 	}
 }
 
-func (m QuestionModel) Init() tea.Cmd {
+func (m FormModel) Init() tea.Cmd {
 	return textinput.Blink
 }
 
-func (m QuestionModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m FormModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
@@ -77,13 +65,26 @@ func (m QuestionModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m QuestionModel) View() string {
+func (m FormModel) View() string {
 	return fmt.Sprintf(
 		"%s\n\n%s\n\n", // Display the question dynamically
 		m.question,
 		m.textInput.View(),
 	) + "\n"
 }
+
+func RenderForm(question string, options []string, placeholder string) (string, error) {
+	p := tea.NewProgram(initialModel(question, placeholder))
+	model, err := p.Run()
+	if err != nil {
+		return "", err
+	}
+	if qModel, ok := model.(FormModel); ok {
+		return qModel.textInput.Value(), nil
+	}
+	return "", fmt.Errorf("could not get the answer")
+}
+
 func form(L *lua.LState) int {
 	question := L.ToString(1)
 	luaTable := L.ToTable(2)
@@ -92,16 +93,16 @@ func form(L *lua.LState) int {
 		options = append(options, value.String())
 	})
 	placeholder := L.ToString(3)
-	RenderFunc, err := Question(question, options, placeholder)
+	answer, err := RenderForm(question, options, placeholder)
 	if err != nil {
 		L.Push(lua.LString(err.Error()))
 	} else {
-		L.Push(lua.LString(RenderFunc))
+		L.Push(lua.LString(answer))
 	}
 	return 1
 }
 
-func FormLoader(l *lua.LState) int {
+func UIFormLoader(l *lua.LState) int {
 	var exports = map[string]lua.LGFunction{
 		"new": form,
 	}

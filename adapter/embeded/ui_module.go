@@ -12,7 +12,7 @@ type UIQuestion struct {
 	Options     []string
 	PlaceHolder string
 	Answer      string
-	RenderFunc  func(question string, options []string, placeholder string) string
+	RenderFunc  func(question string, options []string, placeholder string) (string, error)
 }
 
 var UIQuestionList []UIQuestion
@@ -22,15 +22,17 @@ func registerUIQuestion(l *lua.LState) int {
 	question := l.CheckString(2)
 	options := l.CheckTable(3)
 	placeholder := l.CheckString(4)
-	answer := l.CheckString(5)
-	renderFunc := l.CheckFunction(6)
+	renderFunc := l.CheckFunction(5)
 
 	var opts []string
 	options.ForEach(func(_, value lua.LValue) {
 		opts = append(opts, value.String())
 	})
 
-	render := func(q string, o []string, pl string) string {
+	render := func(q string, o []string, pl string) (string, error) {
+		if renderFunc == nil {
+			return "", fmt.Errorf("render function is nil")
+		}
 		luaQuestion := lua.LString(q)
 		luaOptions := l.NewTable()
 		for i, opt := range o {
@@ -46,13 +48,16 @@ func registerUIQuestion(l *lua.LState) int {
 
 		if err != nil {
 			fmt.Println("Error in rendering question:", err)
-			return ""
+			return "", err
 		}
 
 		luaResult := l.Get(-1)
 		l.Pop(1)
 
-		return luaResult.String()
+		if str, ok := luaResult.(lua.LString); ok {
+			return string(str), nil
+		}
+		return "", fmt.Errorf("expected string result, got %T", luaResult)
 	}
 
 	UIQuestionList = append(UIQuestionList, UIQuestion{
@@ -60,7 +65,6 @@ func registerUIQuestion(l *lua.LState) int {
 		Question:    question,
 		Options:     opts,
 		PlaceHolder: placeholder,
-		Answer:      answer,
 		RenderFunc:  render,
 	})
 
@@ -69,7 +73,7 @@ func registerUIQuestion(l *lua.LState) int {
 
 func UILoader(l *lua.LState) int {
 	var exports = map[string]lua.LGFunction{
-		"new": registerUIQuestion,
+		"add": registerUIQuestion,
 	}
 
 	mod := l.SetFuncs(l.NewTable(), exports)

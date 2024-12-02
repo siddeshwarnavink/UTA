@@ -9,25 +9,12 @@ crypto.register("AES", aes.encrypt, aes.decrypt)
 keyExchange.register("DHKC", dh.clientDiffieHellman, dh.serverDiffieHellman)
 keyExchange.register("RSA", rsa.clientRSA, rsa.serverRSA)
 
--- local mode = require("mode")
-
 local ui = require("ui")
 local mcq = require("ui.mcq")
--- local form = require("ui.question")
+local form = require("ui.form")
 
--- ui.add(
-    mcq.new("Select the mode", {"Client", "Server"},"")
--- )
--- OR
--- ui.add(mcq.new("Select the mode", mode.list))
-
--- ui.add(question.new("Unencrypted Connection's Address"))
--- ui.add(question.new(""Encrypted Connection's Address"))
--- ui.add(
-    mcq.new("Select the key exchange algorithm", keyExchange.list)
--- )
--- ui.add(
-    mcq.new("Select the encryption algorithm", crypto.list)
--- )
-
-
+ui.add("MODE","Select the mode",{"Client", "Server"}," ",mcq.new)
+ui.add("UNENCRYPTED_ADDRESS","Unencrypted Connection's Address",{" "},"127.0.0.1:8888",form.new)
+ui.add("ENCRYPTED_ADDRESS","Encrypted Connection's Address",{" "},"127.0.0.1:9999",form.new)
+ui.add("KEY_EXCHANGE","Select the key exchange algorithm",{"DHKC", "RSA"}," ",mcq.new)
+ui.add("ENCRYPTION","Select the encryption algorithm",{"AES"}," ",mcq.new)

@@ -72,7 +72,7 @@ func (m mcqModel) View() string {
 	return s.String()
 }
 
-func MCQ(question string, options []string, placeholder string) (string, error) {
+func RenderMCQ(question string, options []string, placeholder string) (string, error) {
 	model := mcqModel{
 		question: question,
 		options:  options,
@@ -98,11 +98,13 @@ func mcq(L *lua.LState) int {
 		options = append(options, value.String())
 	})
 	placeholder := L.ToString(3)
-	RenderFunc, err := MCQ(question, options, placeholder)
+	var answer string
+	var err error
+	answer, err = RenderMCQ(question, options, placeholder)
 	if err != nil {
 		L.Push(lua.LString(err.Error()))
 	} else {
-		L.Push(lua.LString(RenderFunc))
+		L.Push(lua.LString(answer))
 	}
 	return 1
 }

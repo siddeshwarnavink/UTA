@@ -35,6 +35,12 @@ type WsData struct {
 	Config       *string              `json:"config,omitempty"`
 }
 
+type RequestMessageJson struct {
+	Type    p2p.RequestMessageType `json:"request"`
+	ReqId   string                 `json:"reqId"`
+	Payload string                 `json:"payload"`
+}
+
 var transmissions = sync.Map{} // ip: boolean
 
 func main() {
@@ -104,6 +110,32 @@ func main() {
 				transmissions.Store(val.IP, val.Send)
 				transmissionChan <- val
 				msgChan <- WsData{Transmission: &val, PeerTable: nil}
+			}
+		}()
+
+		// listen for request message
+		go func() {
+			for {
+				_, msg, err := conn.ReadMessage()
+				if err != nil {
+					if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseNormalClosure) {
+						fmt.Println("Unexpected WebSocket closure")
+					}
+					time.Sleep(5 * time.Second)
+					continue
+				}
+
+				fmt.Printf("Got request %s\n", msg)
+
+				var reqObj RequestMessageJson
+				err = json.Unmarshal(msg, &reqObj)
+				if err != nil {
+					fmt.Println("Invalid json request")
+					continue
+				}
+
+				udpReq, err := p2p.RequestMessage(p2p.Wizard, reqObj.Type, reqObj.ReqId)
+				peerConn.Write([]byte(udpReq))
 			}
 		}()
 

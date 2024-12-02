@@ -47,7 +47,6 @@ func TestDiscoveryMessageForClientAdapter(t *testing.T) {
 	}
 }
 
-
 func TestDiscoveryMessageForWizard(t *testing.T) {
 	msg, err := DiscoveryMessage(Wizard, "", "")
 
@@ -121,7 +120,7 @@ func TestTransmissionMessage(t *testing.T) {
 
 	// 01-00-000000001-0
 	if msg != "01000000000010" {
-		t.Errorf("TransmissionMessage() incorrect message = %s",msg)
+		t.Errorf("TransmissionMessage() incorrect message = %s", msg)
 		return
 	}
 }
@@ -135,12 +134,54 @@ func TestExtractTransmissionMessageDetails(t *testing.T) {
 	}
 
 	if role != ClientProxy {
-		t.Errorf("ExtractTransmissionMessageDetails() incorrect role = %s",role)
+		t.Errorf("ExtractTransmissionMessageDetails() incorrect role = %s", role)
 		return
 	}
 
 	if !sent {
 		t.Errorf("ExtractTransmissionMessageDetails() incorrect transmission state")
+		return
+	}
+}
+
+func TestStringMessage(t *testing.T) {
+	msg, err := StringMessage(ClientProxy, "yo mama")
+	if err != nil {
+		t.Errorf("TestStringMessage() error = %v", err)
+		return
+	}
+	if msg != "100000000000yo mama" {
+		t.Errorf("TestStringMessage() error = %v", msg)
+		return
+	}
+
+}
+
+func TestExtractStringMessage(t *testing.T) {
+	role, msg, err := ExtractStringMessage("100000000000yo mama")
+	if err != nil {
+		t.Errorf("TestExtractStringMessage() error = %v", err)
+		return
+	}
+	if role != ClientProxy {
+		t.Errorf("TestStringMessage() invalid role = %v", role)
+		return
+	}
+	if msg != "yo mama" {
+		t.Errorf("TestStringMessage() invalid message = %v", msg)
+		return
+	}
+
+}
+
+func TestRequestMessage(t *testing.T) {
+	msg, err := RequestMessage(Wizard, RequestTypeConfig, "abc")
+	if err != nil {
+		t.Errorf("TestRequestMessage() error = %v", err)
+		return
+	}
+	if msg != "101000000000{\"t\":0,\"i\":\"abc\"}" {
+		t.Errorf("TestRequestMessage() invalid message = %s", msg)
 		return
 	}
 }

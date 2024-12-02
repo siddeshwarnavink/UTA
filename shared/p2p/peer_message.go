@@ -3,22 +3,21 @@
 Peer Message format,
 by Sideshwar (who only thinks like web developer btw)
 
-+------+-----------------+------------+
-| S.no | Content         | Size(bits) |
-+------+-----------------+------------+
-| 1    | Message type    | 2          |
-| 2    | Peer type       | 2          |
-| 3    | Message length  | 8          |
-| 4    | Akshual message | -          |
-+------------------------+------------+
-| MIN SIZE               | 12         |
-+------------------------+------------+
++----------+-----------------+------------+
+| S.no     | Content         | Size(bits) |
++----------+-----------------+------------+
+| 1        | Message type    | 2          |
+| 2        | Peer type       | 2          |
+| 3        | Message length  | 8          |
+| 4        | Akshual message | -          |
++----------+-----------------+------------+
 
 +--------------+------+
 | Message type | Bits |
 +--------------+------+
 | Discovery    | 00   |
 | Transmission | 01   |
+| String       | 10   |
 +--------------+------+
 
 +----------------+------+
@@ -39,6 +38,7 @@ Transmission message contains only one bit,
 package p2p
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -49,9 +49,10 @@ import (
 type PeerMsgType int
 
 const (
-	Invalid      PeerMsgType = -1
-	Discovery    PeerMsgType = 0
-	Transmission PeerMsgType = 1
+	Invalid           PeerMsgType = -1
+	Discovery         PeerMsgType = 0
+	Transmission      PeerMsgType = 1
+	StringMessageType PeerMsgType = 2
 )
 
 func convertIPv4ToBits(address string) (string, error) {
@@ -132,6 +133,8 @@ func GetPeerMsgType(bits string) (PeerMsgType, error) {
 		return Discovery, nil
 	case "01":
 		return Transmission, nil
+	case "10":
+		return StringMessageType, nil
 	default:
 		return Invalid, fmt.Errorf("Invalid peer message type: %s", typeBits)
 	}
@@ -273,4 +276,75 @@ func ExtractTransmissionMessageDetails(msg string) (PeerRole, bool, error) {
 	transmissionBit := string(msg[len(msg)-1])
 
 	return role, transmissionBit == "0", err
+}
+
+func StringMessage(role PeerRole, message string) (string, error) {
+	msg := "10"
+
+	roleBits, err := getRoleBits(role)
+	if err != nil {
+		return "", err
+	}
+
+	msg += roleBits
+	msg += "00000000"
+	msg += message
+
+	return msg, nil
+}
+
+func ExtractStringMessage(msg string) (PeerRole, string, error) {
+	msgtype, err := GetPeerMsgType(msg)
+	if err != nil || msgtype != StringMessageType {
+		return InvalidRole, "", fmt.Errorf("not string message")
+	}
+
+	role, err := getRoleFromBits(msg)
+	if err != nil {
+		return InvalidRole, "", err
+	}
+
+	strmsg := msg[12:]
+	return role, strmsg, nil
+}
+
+type RequestMessageType int
+
+const (
+	RequestMessageTypeInvalid RequestMessageType = -1
+	RequestTypeConfig RequestMessageType = 0
+)
+
+type RequestMessageJson struct {
+	Type      RequestMessageType `json:"t"`
+	RequestId string             `json:"i"`
+}
+
+func RequestMessage(role PeerRole, reqType RequestMessageType, requestId string) (string, error) {
+	reqObj := RequestMessageJson{
+		Type:      reqType,
+		RequestId: requestId,
+	}
+
+	json, err := json.Marshal(reqObj)
+	if err != nil {
+		return "", err
+	}
+
+	return StringMessage(role, string(json))
+}
+
+func ExtractRequestMessage(message string) (PeerRole, RequestMessageType, string, error) {
+	role, rawMsg, err := ExtractStringMessage(message)
+	if err != nil {
+		return InvalidRole, RequestMessageTypeInvalid, "", err
+	}
+
+	var obj RequestMessageJson
+	err = json.Unmarshal([]byte(rawMsg), &obj)
+	if err != nil {
+		return role, RequestMessageTypeInvalid, "", err
+	}
+
+	return role, obj.Type, obj.RequestId, nil
 }

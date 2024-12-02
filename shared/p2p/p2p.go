@@ -118,6 +118,11 @@ func ListenForPeers(peerTable *PeerTable) chan TransmissionMsg {
 					}
 					ch <- chmsg
 				}
+			} else if msgtype == StringMessageType {
+				senderRole, reqType, reqId, err := ExtractRequestMessage(message)
+				if err != nil {
+					fmt.Printf("Got a request! %s %d %s \n", senderRole, reqType, reqId)
+				}
 			}
 
 		}

@@ -7,19 +7,21 @@ import './App.css'
 import LiveAdapters from './components/pages/LiveAdapters';
 import TheNavbar from './components/layout/TheNavbar';
 import NetworkGraph from './components/pages/NetworkGraph'
+import AdapterConfig from './components/pages/AdapterConfig'
 
 const App = () => {
+  const [ws, setWs] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [routingTable, setRoutingTable] = useState({});
   const [transmission, setTransmission] = useState(null);
 
   useEffect(() => {
-    let ws;
     try {
-      ws = new WebSocket('ws://localhost:3300/ws');
+      const myws = new WebSocket('ws://localhost:3300/ws');
+      setWs(myws);
 
-      ws.onmessage = (event) => {
+      myws.onmessage = (event) => {
         try {
           const parsedData = JSON.parse(event.data);
           if ("peerTable" in parsedData && parsedData.peerTable !== null) {
@@ -43,7 +45,7 @@ const App = () => {
         }
       };
 
-      ws.onerror = (event) => {
+      myws.onerror = (event) => {
         setError("WebSocket encountered an error.");
         console.error(event);
       };
@@ -52,11 +54,25 @@ const App = () => {
     }
 
     return () => {
-      if (ws) {
+      if (ws !== null) {
         ws.close();
       }
     };
   }, []);
+
+  const requestConfig = ip => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      console.error('socket not open or ready');
+      return;
+    }
+
+    try {
+      const messageToSend = JSON.stringify({ request: 1, payload: ip });
+      ws.send(messageToSend);
+    } catch (err) {
+      console.error('Error sending message:', err);
+    }
+  }
 
   if (loading) {
     return (
@@ -67,7 +83,6 @@ const App = () => {
   } else if (error) {
     return <Alert variant="danger">{error}</Alert>;
   }
-
 
   return (
     <BrowserRouter>
@@ -80,8 +95,21 @@ const App = () => {
             </>
           }
         >
-          <Route path="/" element={<LiveAdapters routingTable={routingTable} transmission={transmission} />} />
-          <Route path="/network" element={<NetworkGraph routingTable={routingTable} transmission={transmission} />} />
+          <Route exact path="/" element={
+            <LiveAdapters
+              routingTable={routingTable}
+              transmission={transmission} />
+          } />
+          <Route exact path="/network" element={
+            <NetworkGraph
+              routingTable={routingTable}
+              transmission={transmission} />} />
+          <Route path="/c/:ip" element={
+            <AdapterConfig
+              routingTable={routingTable}
+              requestConfig={requestConfig}
+            />
+          } />
         </Route>
       </Routes>
     </BrowserRouter>

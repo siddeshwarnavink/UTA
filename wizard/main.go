@@ -26,11 +26,13 @@ type WsDataType int
 const (
 	PeerTableData    WsDataType = 1
 	TransmissionData WsDataType = 2
+	GetConfig        WsDataType = 3
 )
 
 type WsData struct {
 	PeerTable    *map[string]p2p.Peer `json:"peerTable,omitempty"`
 	Transmission *p2p.TransmissionMsg `json:"transmission,omitempty"`
+	Config       *string              `json:"config,omitempty"`
 }
 
 var transmissions = sync.Map{} // ip: boolean
@@ -96,6 +98,7 @@ func main() {
 			}
 		}()
 
+		// send data transfers
 		go func() {
 			for val := range ch {
 				transmissions.Store(val.IP, val.Send)
@@ -104,6 +107,7 @@ func main() {
 			}
 		}()
 
+		// send routing table every 5 seconds
 		go func() {
 			for {
 				routingTable := peerTable.GetRoutingTable()
@@ -112,6 +116,7 @@ func main() {
 			}
 		}()
 
+		// sender junction
 		for {
 			select {
 			case msg := <-msgChan:

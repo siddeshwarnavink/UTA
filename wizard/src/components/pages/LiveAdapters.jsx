@@ -2,6 +2,8 @@ import { faComputer, faServer, faTable, faUpload, faDownload } from '@fortawesom
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Container, Table } from 'react-bootstrap';
 
+import { Link } from 'react-router-dom';
+
 const LiveAdapters = ({ routingTable, transmission }) => {
   return (
     <Container>
@@ -25,7 +27,11 @@ const LiveAdapters = ({ routingTable, transmission }) => {
               .filter(([_, item]) => item.role !== "wizard")
               .map(([key, peer]) => (
                 <tr key={key}>
-                  <td>{peer.ip}</td>
+                  <td>
+                    <Link to={'/c/' + peer.ip}>
+                      {peer.ip}
+                    </Link>
+                  </td>
                   <td>
                     {(transmission !== null && peer.ip in transmission) ?
                       transmission[peer.ip] ? (

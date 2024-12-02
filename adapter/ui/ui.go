@@ -98,14 +98,22 @@ func RenderForm(parsedFlags Flags) (Flags, error) {
 		parsedFlags.Mode = ModeFromString(modeResult)
 	}
 
-	if parsedFlags.Enc == "" && parsedFlags.Dec == "" {
-		portResult, err := Form("Enter the Connection Addresses", []string{"Unencrypted Connection's Address", "Encrypted Connection's Address"})
+	if parsedFlags.Dec == "" {
+		DecResult, err := Question("Enter the Unencrypted Connection's Address", "127.0.0.1:10000")
 		if err != nil {
 			return parsedFlags, err
 		}
 		fmt.Println("---")
-		parsedFlags.Dec = portResult[0]
-		parsedFlags.Enc = portResult[1]
+		parsedFlags.Dec = DecResult
+	}
+
+	if parsedFlags.Enc == "" {
+		EncResult, err := Question("Enter the Encrypted Connection's Address", "127.0.0.1:9999")
+		if err != nil {
+			return parsedFlags, err
+		}
+		fmt.Println("---")
+		parsedFlags.Enc = EncResult
 	}
 
 	if parsedFlags.Protocol == "" {

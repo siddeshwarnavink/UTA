@@ -2,6 +2,7 @@ package p2p
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"sync"
@@ -120,7 +121,6 @@ func ListenForPeers(peerConn net.UDPConn, role PeerRole, peerTable *PeerTable) (
 
 			// Adapter getting a request
 			if role != Wizard && msgtype == StringRequestMessageType {
-				fmt.Printf("Got request in UDP %s\n", message)
 				_, reqType, reqId, payload, err := ExtractRequestMessage(message)
 				if err == nil {
 					// if that is me, send response
@@ -131,6 +131,7 @@ func ListenForPeers(peerConn net.UDPConn, role PeerRole, peerTable *PeerTable) (
 						switch reqType {
 						case RequestTypeConfig:
 							fmt.Println("asking for my config")
+
 							// TODO: Read config file from flag
 							data, err := os.ReadFile("./adapter/config/init.lua")
 							if err != nil {
@@ -145,7 +146,34 @@ func ListenForPeers(peerConn net.UDPConn, role PeerRole, peerTable *PeerTable) (
 								return
 							}
 
-							fmt.Printf("my response message=%s\n", resMsg)
+							peerConn.Write([]byte(resMsg))
+							break
+						case RequestTypeLogs:
+							fmt.Println("asking for my logs")
+
+							file, err := os.Open("./logs/adapter.log")
+							if err != nil {
+								fmt.Println(err)
+								return
+							}
+							defer file.Close()
+
+							const chunkSize = 500
+							buf := make([]byte, chunkSize)
+
+							_, err = file.Read(buf)
+							if err != nil && err != io.EOF {
+								fmt.Println(err)
+								return
+							}
+
+							resMsg, err := ResponseMessage(role, reqId, string(buf))
+
+							fmt.Printf("my response=%s\n", resMsg)
+							if err != nil {
+								fmt.Println("Invalid response message:", err)
+								return
+							}
 
 							peerConn.Write([]byte(resMsg))
 							break

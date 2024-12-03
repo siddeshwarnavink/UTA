@@ -8,7 +8,7 @@ import './App.css'
 import LiveAdapters from './components/pages/LiveAdapters';
 import TheNavbar from './components/layout/TheNavbar';
 import NetworkGraph from './components/pages/NetworkGraph'
-import AdapterConfig from './components/pages/AdapterConfig'
+import ViewAdapter from './components/pages/ViewAdapter';
 
 const App = () => {
   const [ws, setWs] = useState(null);
@@ -63,22 +63,22 @@ const App = () => {
     };
   }, []);
 
-  const requestConfig = ip => {
+  const wsRequest = (ip, reqType) => {
     return new Promise((res, rej) => {
       if (!ws || ws.readyState !== WebSocket.OPEN) {
         console.error('socket not open or ready');
-        rej(null);
+        rej("Websocket is closed. Try refreshing the page");
         return;
       }
 
       // send request to ws
       const id = uuidv4();
       try {
-        const messageToSend = JSON.stringify({ reqId: id, request: 0, payload: ip });
+        const messageToSend = JSON.stringify({ reqId: id, request: reqType, payload: ip });
         ws.send(messageToSend);
       } catch (err) {
         console.error('Error sending message:', err);
-        rej(err);
+        rej("Failed to send config request");
       }
 
       // listen for response in ws
@@ -93,11 +93,20 @@ const App = () => {
           }
         } catch (err) {
           console.error("Error parsing message:", err);
-          rej(err);
+          rej("Failed to listen for config response");
         }
       };
 
     });
+
+  }
+
+  const requestConfig = ip => {
+    return wsRequest(ip, 0);
+  }
+
+  const requestLogs = ip => {
+    return wsRequest(ip, 1);
   }
 
   if (loading) {
@@ -131,9 +140,10 @@ const App = () => {
               routingTable={routingTable}
               transmission={transmission} />} />
           <Route path="/c/:ip" element={
-            <AdapterConfig
+            <ViewAdapter
               routingTable={routingTable}
               requestConfig={requestConfig}
+              requestLogs={requestLogs}
             />
           } />
         </Route>

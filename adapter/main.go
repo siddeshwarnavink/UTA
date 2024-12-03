@@ -51,10 +51,11 @@ func main() {
 
 	if flags.Mode == ui.Client {
 		go p2p.AnnouncePresence(*peerConn, p2p.ClientProxy, flags.Dec, flags.Enc)
+		p2p.ListenForPeers(*peerConn, p2p.ClientProxy, peerTable)
 	} else {
 		go p2p.AnnouncePresence(*peerConn, p2p.ServerProxy, flags.Dec, flags.Enc)
+		p2p.ListenForPeers(*peerConn, p2p.ServerProxy, peerTable)
 	}
-	p2p.ListenForPeers(peerTable)
 
 	switch flags.Mode {
 	case ui.Client:

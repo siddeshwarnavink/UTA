@@ -175,13 +175,82 @@ func TestExtractStringMessage(t *testing.T) {
 }
 
 func TestRequestMessage(t *testing.T) {
-	msg, err := RequestMessage(Wizard, RequestTypeConfig, "abc")
+	msg, err := RequestMessage(Wizard, RequestTypeConfig, "abc", "def")
 	if err != nil {
 		t.Errorf("TestRequestMessage() error = %v", err)
 		return
 	}
-	if msg != "101000000000{\"t\":0,\"i\":\"abc\"}" {
+	if msg != "101000000000{\"t\":0,\"i\":\"abc\",\"p\":\"def\"}0" {
 		t.Errorf("TestRequestMessage() invalid message = %s", msg)
+		return
+	}
+}
+
+func TestStringMessageType(t *testing.T) {
+	bits := "101000000000{\"t\":1,\"i\":\"d4692450-9775-4d5d-a346-4fbf916904c2\",\"p\":\"192.168.1.7:41474\"}0"
+	msgtype, err := GetPeerMsgType(bits)
+	if err != nil {
+		t.Errorf("TestStringMessageType() error = %v", err)
+		return
+	}
+
+	if msgtype != StringRequestMessageType {
+		t.Errorf("TestStringMessageType() invalid type = %d", msgtype)
+	}
+}
+
+func TestExtractMessageRequest(t *testing.T) {
+	bits := "101000000000{\"t\":0,\"i\":\"c6ac0727-9469-403e-ac5b-cc2a73723199\",\"p\":\"192.168.1.7:52026\"}0"
+	role, reqType, reqId, payload, err := ExtractRequestMessage(bits)
+
+	if err != nil {
+		t.Errorf("TestExtractMessageRequest() error = %v", err)
+		return
+	}
+
+	if role != Wizard {
+		t.Errorf("TestExtractMessageRequest() invalid role = %s", role)
+		return
+	}
+
+	if reqType != RequestTypeConfig {
+		t.Errorf("TestExtractMessageRequest() invalid request type = %d", reqType)
+		return
+	}
+
+	if reqId != "c6ac0727-9469-403e-ac5b-cc2a73723199" {
+		t.Errorf("TestExtractMessageRequest() invalid request id = %s", reqId)
+		return
+	}
+
+	if payload != "192.168.1.7:52026" {
+		t.Errorf("TestExtractMessageRequest() invalid payload = %s", payload)
+		return
+	}
+}
+
+func TestExtractResponse(t *testing.T) {
+	bits := "100100000000{\"i\":\"68d8535e-ca09-44c2-9781-87b6247162a0\",\"d\":\"deeznuts\"}1"
+
+	role, reqId, data, err := ExtractResponseMessage(bits)
+
+	if err != nil {
+		t.Errorf("TestExtractResponse() error = %v", err)
+		return
+	}
+
+	if role != ServerProxy {
+		t.Errorf("TestExtractResponse() invalid role = %s", role)
+		return
+	}
+
+	if data != "deeznuts" {
+		t.Errorf("TestExtractResponse() invalid data = %s", data)
+		return
+	}
+
+	if reqId != "68d8535e-ca09-44c2-9781-87b6247162a0" {
+		t.Errorf("TestExtractResponse() invalid request id = %s", reqId)
 		return
 	}
 }

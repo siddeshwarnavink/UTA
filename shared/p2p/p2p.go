@@ -36,6 +36,11 @@ type TransmissionMsg struct {
 	Send bool   `json:"sent"`
 }
 
+type WsResponseMsg struct {
+	RequestId string `json:"reqId"`
+	Data      string `json:"data"`
+}
+
 type PeerTable struct {
 	mu    sync.Mutex
 	peers map[string]Peer
@@ -77,8 +82,9 @@ func AnnouncePresence(conn net.UDPConn, role PeerRole, fromIP, toIP string) {
 	}
 }
 
-func ListenForPeers(peerTable *PeerTable) chan TransmissionMsg {
-	ch := make(chan TransmissionMsg)
+func ListenForPeers(peerConn net.UDPConn, role PeerRole, peerTable *PeerTable) (chan TransmissionMsg, chan WsResponseMsg) {
+	transCh := make(chan TransmissionMsg)
+	resCh := make(chan WsResponseMsg)
 
 	go func() {
 		addr, err := net.ResolveUDPAddr("udp", multicastAddr)
@@ -92,7 +98,7 @@ func ListenForPeers(peerTable *PeerTable) chan TransmissionMsg {
 		}
 		defer conn.Close()
 
-		buf := make([]byte, 1024)
+		buf := make([]byte, 6040)
 		for {
 			n, src, err := conn.ReadFromUDP(buf)
 			if err != nil {
@@ -102,35 +108,89 @@ func ListenForPeers(peerTable *PeerTable) chan TransmissionMsg {
 			address := src.String()
 
 			message := string(buf[:n])
+
 			msgtype, err := GetPeerMsgType(message)
 			if err != nil {
 				fmt.Printf("Invalid peer message: %s", message)
 			}
 
+			// fmt.Printf("UDP(%d)=%s\n", msgtype, message)
+
 			peerTable.updatePeerTable(address, message, msgtype)
 
-			if msgtype == Transmission {
+			// Adapter getting a request
+			if role != Wizard && msgtype == StringRequestMessageType {
+				fmt.Printf("Got request in UDP %s\n", message)
+				_, reqType, reqId, payload, err := ExtractRequestMessage(message)
+				if err == nil {
+					// if that is me, send response
+					if payload == peerConn.LocalAddr().String() {
+						fmt.Println("That request is for me")
+						// TODO: validate if valid wizard
+						// send response
+						switch reqType {
+						case RequestTypeConfig:
+							fmt.Println("asking for my config")
+							// TODO: Read config file from flag
+							data, err := os.ReadFile("./adapter/config/init.lua")
+							if err != nil {
+								fmt.Println("Error reading config file:", err)
+								return
+							}
+							configContent := string(data)
+
+							resMsg, err := ResponseMessage(role, reqId, configContent)
+							if err != nil {
+								fmt.Println("Invalid response message:", err)
+								return
+							}
+
+							fmt.Printf("my response message=%s\n", resMsg)
+
+							peerConn.Write([]byte(resMsg))
+							break
+						default:
+							fmt.Println("Invalid request sent to me")
+							break
+						}
+					} else {
+						fmt.Printf("Not for me, I am %s\n", peerConn.LocalAddr().String())
+					}
+				} else {
+					fmt.Println("It was a invalid request")
+				}
+			}
+
+			// Wizard getting response from adapters
+			if role == Wizard && msgtype == StringResponseMessageType {
+				fmt.Printf("Got response in UDP %s\n", message)
+				_, reqId, data, err := ExtractResponseMessage(message)
+				if err == nil {
+					obj := WsResponseMsg{
+						RequestId: reqId,
+						Data:      data,
+					}
+					resCh <- obj
+				} else {
+					fmt.Printf("That response had errors %v\n", err)
+				}
+			}
+
+			// Wizard getting transmission message
+			if role == Wizard && msgtype == Transmission {
 				_, sent, err := ExtractTransmissionMessageDetails(message)
 				if err == nil {
 					chmsg := TransmissionMsg{
 						IP:   address,
 						Send: sent,
 					}
-					ch <- chmsg
-				}
-			} else if msgtype == StringMessageType {
-				senderRole, reqType, reqId, err := ExtractRequestMessage(message)
-				if err != nil {
-					fmt.Printf("Got a request! %s %d %s \n", senderRole, reqType, reqId)
+					transCh <- chmsg
 				}
 			}
-
 		}
-
-		close(ch)
 	}()
 
-	return ch
+	return transCh, resCh
 }
 
 func (pt *PeerTable) cleanupInactivePeers() {

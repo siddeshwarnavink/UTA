@@ -26,13 +26,13 @@ type WsDataType int
 const (
 	PeerTableData    WsDataType = 1
 	TransmissionData WsDataType = 2
-	GetConfig        WsDataType = 3
+	ResponseData     WsDataType = 3
 )
 
 type WsData struct {
 	PeerTable    *map[string]p2p.Peer `json:"peerTable,omitempty"`
 	Transmission *p2p.TransmissionMsg `json:"transmission,omitempty"`
-	Config       *string              `json:"config,omitempty"`
+	Response     *p2p.WsResponseMsg   `json:"response,omitempty"`
 }
 
 type RequestMessageJson struct {
@@ -53,7 +53,7 @@ func main() {
 	defer peerConn.Close()
 
 	go p2p.AnnouncePresence(*peerConn, p2p.Wizard, "", "")
-	ch := p2p.ListenForPeers(peerTable)
+	transCh, resChan := p2p.ListenForPeers(*peerConn, p2p.Wizard, peerTable)
 
 	r := gin.Default()
 
@@ -106,7 +106,7 @@ func main() {
 
 		// send data transfers
 		go func() {
-			for val := range ch {
+			for val := range transCh {
 				transmissions.Store(val.IP, val.Send)
 				transmissionChan <- val
 				msgChan <- WsData{Transmission: &val, PeerTable: nil}
@@ -125,8 +125,6 @@ func main() {
 					continue
 				}
 
-				fmt.Printf("Got request %s\n", msg)
-
 				var reqObj RequestMessageJson
 				err = json.Unmarshal(msg, &reqObj)
 				if err != nil {
@@ -134,8 +132,19 @@ func main() {
 					continue
 				}
 
-				udpReq, err := p2p.RequestMessage(p2p.Wizard, reqObj.Type, reqObj.ReqId)
+				udpReq, err := p2p.RequestMessage(p2p.Wizard, reqObj.Type, reqObj.ReqId, reqObj.Payload)
+				fmt.Printf("sending request %s\n", udpReq)
 				peerConn.Write([]byte(udpReq))
+
+				time.Sleep(1 * time.Second)
+			}
+		}()
+
+		// send response
+		go func() {
+			for val := range resChan {
+				msgChan <- WsData{Response: &val}
+				time.Sleep(5 * time.Second)
 			}
 		}()
 

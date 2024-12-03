@@ -49,10 +49,12 @@ import (
 type PeerMsgType int
 
 const (
-	Invalid           PeerMsgType = -1
-	Discovery         PeerMsgType = 0
-	Transmission      PeerMsgType = 1
-	StringMessageType PeerMsgType = 2
+	Invalid                   PeerMsgType = -1
+	Discovery                 PeerMsgType = 0
+	Transmission              PeerMsgType = 1
+	StringMessageType         PeerMsgType = 2
+	StringRequestMessageType  PeerMsgType = 3
+	StringResponseMessageType PeerMsgType = 4
 )
 
 func convertIPv4ToBits(address string) (string, error) {
@@ -134,6 +136,11 @@ func GetPeerMsgType(bits string) (PeerMsgType, error) {
 	case "01":
 		return Transmission, nil
 	case "10":
+		if bits[len(bits)-1:] == "0" {
+			return StringRequestMessageType, nil
+		} else if bits[len(bits)-1:] == "1" {
+			return StringResponseMessageType, nil
+		}
 		return StringMessageType, nil
 	default:
 		return Invalid, fmt.Errorf("Invalid peer message type: %s", typeBits)
@@ -295,7 +302,7 @@ func StringMessage(role PeerRole, message string) (string, error) {
 
 func ExtractStringMessage(msg string) (PeerRole, string, error) {
 	msgtype, err := GetPeerMsgType(msg)
-	if err != nil || msgtype != StringMessageType {
+	if err != nil || !(msgtype == StringMessageType || msgtype == StringRequestMessageType || msgtype == StringResponseMessageType) {
 		return InvalidRole, "", fmt.Errorf("not string message")
 	}
 
@@ -312,18 +319,20 @@ type RequestMessageType int
 
 const (
 	RequestMessageTypeInvalid RequestMessageType = -1
-	RequestTypeConfig RequestMessageType = 0
+	RequestTypeConfig         RequestMessageType = 0
 )
 
 type RequestMessageJson struct {
 	Type      RequestMessageType `json:"t"`
 	RequestId string             `json:"i"`
+	Payload   string             `json:"p"`
 }
 
-func RequestMessage(role PeerRole, reqType RequestMessageType, requestId string) (string, error) {
+func RequestMessage(role PeerRole, reqType RequestMessageType, requestId string, payload string) (string, error) {
 	reqObj := RequestMessageJson{
 		Type:      reqType,
 		RequestId: requestId,
+		Payload:   payload,
 	}
 
 	json, err := json.Marshal(reqObj)
@@ -331,20 +340,58 @@ func RequestMessage(role PeerRole, reqType RequestMessageType, requestId string)
 		return "", err
 	}
 
-	return StringMessage(role, string(json))
+	return StringMessage(role, string(json)+"0")
 }
 
-func ExtractRequestMessage(message string) (PeerRole, RequestMessageType, string, error) {
+func ExtractRequestMessage(message string) (PeerRole, RequestMessageType, string, string, error) {
 	role, rawMsg, err := ExtractStringMessage(message)
 	if err != nil {
-		return InvalidRole, RequestMessageTypeInvalid, "", err
+		return InvalidRole, RequestMessageTypeInvalid, "", "", err
 	}
+
+	// TODO: Check if valid request message
 
 	var obj RequestMessageJson
-	err = json.Unmarshal([]byte(rawMsg), &obj)
+	err = json.Unmarshal([]byte(rawMsg[:len(rawMsg)-1]), &obj)
 	if err != nil {
-		return role, RequestMessageTypeInvalid, "", err
+		return role, RequestMessageTypeInvalid, "", "", err
 	}
 
-	return role, obj.Type, obj.RequestId, nil
+	return role, obj.Type, obj.RequestId, obj.Payload, nil
+}
+
+type ResponseMessageJson struct {
+	RequestId string `json:"i"`
+	Data      string `json:"d"`
+}
+
+func ResponseMessage(role PeerRole, requestId string, data string) (string, error) {
+	reqObj := ResponseMessageJson{
+		RequestId: requestId,
+		Data:      data,
+	}
+
+	json, err := json.Marshal(reqObj)
+	if err != nil {
+		return "", err
+	}
+
+	return StringMessage(role, string(json)+"1")
+}
+
+func ExtractResponseMessage(message string) (PeerRole, string, string, error) {
+	role, rawMsg, err := ExtractStringMessage(message)
+	if err != nil {
+		return InvalidRole, "", "", err
+	}
+
+	// TODO: Check if valid response message
+
+	var obj ResponseMessageJson
+	err = json.Unmarshal([]byte(rawMsg[:len(rawMsg)-1]), &obj)
+	if err != nil {
+		return role, "", "", err
+	}
+
+	return role, obj.RequestId, obj.Data, nil
 }

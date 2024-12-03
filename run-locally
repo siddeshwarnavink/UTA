@@ -1,5 +1,6 @@
 #!/bin/bash
 
+tmux kill-session -t UTA_running
 tmux new-session -d -s UTA_running -n "adapters"
 
 tmux send-keys -t UTA_running:1 'go run ./adapter --server -enc 127.0.0.1:9999 -dec 127.0.0.1:10000 --prot DHKC --algo AES' C-m

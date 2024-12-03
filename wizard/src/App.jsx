@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Outlet, Route, Routes } from 'react-router-dom';
 import { Alert, Spinner } from 'react-bootstrap';
+import { v4 as uuidv4 } from 'uuid';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 import './App.css'
@@ -67,7 +68,8 @@ const App = () => {
     }
 
     try {
-      const messageToSend = JSON.stringify({ request: 1, payload: ip });
+      const id = uuidv4();
+      const messageToSend = JSON.stringify({ reqId: id, request: 0, payload: ip });
       ws.send(messageToSend);
     } catch (err) {
       console.error('Error sending message:', err);

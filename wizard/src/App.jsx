@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter, Outlet, Route, Routes } from 'react-router-dom';
 import { Alert, Spinner } from 'react-bootstrap';
 import { v4 as uuidv4 } from 'uuid';
-import 'bootstrap/dist/css/bootstrap.min.css';
+//import 'bootstrap/dist/css/bootstrap.min.css';
+import './bootstrap.min.css'; // Source: https://bootswatch.com/lumen/
 
 import './App.css'
 import LiveAdapters from './components/pages/LiveAdapters';

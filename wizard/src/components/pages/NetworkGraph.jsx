@@ -70,11 +70,11 @@ const NetworkGraph = ({ routingTable, transmission }) => {
 
           const edgeId = peer.from_ip + "-" + peer.to_ip;
           if (!newEdges.find(e => e.id === edgeId)) {
-            console.log("pushing new edge");
+            console.log("pushing new edge", transmission);
             update = true;
             newEdges.push({
               id: edgeId,
-              type: transmission && transmission.find(t => edgeId.indexOf(t.ip) !== 0) ? "dataFlow" : "smoothstep",
+              type: transmission && transmission[id] ? "dataFlow" : "smoothstep",
               source: peer.from_ip,
               target: peer.to_ip,
             })

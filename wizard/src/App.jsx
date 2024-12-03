@@ -40,6 +40,8 @@ const App = () => {
                 return { [parsedData.transmission.ip]: parsedData.transmission.sent }
               }
             });
+          } else {
+            console.log("unknown message", parsedData)
           }
         } catch (err) {
           console.error("Error parsing message:", err);
@@ -85,7 +87,7 @@ const App = () => {
           const parsedData = JSON.parse(event.data);
           if ("response" in parsedData && parsedData.response !== null) {
             console.log("response", parsedData.response)
-            if(parsedData.response.reqId === id) {
+            if (parsedData.response.reqId === id) {
               res(parsedData.response.data);
             }
           }

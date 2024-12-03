@@ -15,12 +15,6 @@ import (
 
 const wizardPort = 3300 // TODO: Make this dynamic via flag
 
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true // WARN: This is a bad idea
-	},
-}
-
 type WsDataType int
 
 const (
@@ -41,7 +35,17 @@ type RequestMessageJson struct {
 	Payload string                 `json:"payload"`
 }
 
-var transmissions = sync.Map{} // ip: boolean
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true // WARN: This is a bad idea
+	},
+}
+
+var broadcastChan = make(chan WsData)
+var clients = make(map[*websocket.Conn]bool)
+var clients_mutex = &sync.Mutex{}
 
 func main() {
 	peerTable := p2p.NewPeerTable()
@@ -57,66 +61,54 @@ func main() {
 
 	r := gin.Default()
 
+	// Send routing table every 5 seconds
+	go func() {
+		for {
+			routingTable := peerTable.GetRoutingTable()
+			broadcastChan <- WsData{PeerTable: &routingTable, Transmission: nil}
+			time.Sleep(5 * time.Second)
+		}
+	}()
+
+	// Send data transfers
+	go func() {
+		for val := range transCh {
+			fmt.Println("Got a transCh message")
+			broadcastChan <- WsData{Transmission: &val, PeerTable: nil}
+		}
+	}()
+
+	// Send response for client's request
+	go func() {
+		for val := range resChan {
+			broadcastChan <- WsData{Response: &val}
+			time.Sleep(1 * time.Second)
+		}
+	}()
+
 	r.GET("/ws", func(c *gin.Context) {
 		if !websocket.IsWebSocketUpgrade(c.Request) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Not a WebSocket request"})
 			return
 		}
 
-		transmissionChan := make(chan p2p.TransmissionMsg)
-		msgChan := make(chan WsData)
-
-		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+		ws, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upgrade connection"})
 			return
 		}
-		defer conn.Close()
+		defer ws.Close()
 
-		// if transmissionChan is idle for 5 seconds flush cache
-		idleTimeout := 5 * time.Second
-		go func() {
-			timer := time.NewTimer(idleTimeout)
-			defer timer.Stop()
+		clients_mutex.Lock()
+		clients[ws] = true
+		clients_mutex.Unlock()
 
-			for {
-				select {
-				case <-transmissionChan:
-					// if !timer.Stop() {
-					// 	<-timer.C
-					// }
-					timer.Reset(idleTimeout)
-				case <-timer.C:
-					cleanupIp := []string{}
-					transmissions.Range(func(ip, _ interface{}) bool {
-						val := p2p.TransmissionMsg{IP: ip.(string), Send: false}
-						msgChan <- WsData{Transmission: &val, PeerTable: nil}
+		defer delete(clients, ws)
 
-						cleanupIp = append(cleanupIp, ip.(string))
-						return true
-					})
-					for _, ip := range cleanupIp {
-						transmissions.Delete(ip)
-					}
-					timer.Reset(idleTimeout)
-					return
-				}
-			}
-		}()
-
-		// send data transfers
-		go func() {
-			for val := range transCh {
-				transmissions.Store(val.IP, val.Send)
-				transmissionChan <- val
-				msgChan <- WsData{Transmission: &val, PeerTable: nil}
-			}
-		}()
-
-		// listen for request message
+		// Listen data from clients
 		go func() {
 			for {
-				_, msg, err := conn.ReadMessage()
+				_, msg, err := ws.ReadMessage()
 				if err != nil {
 					if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseNormalClosure) {
 						fmt.Println("Unexpected WebSocket closure")
@@ -135,43 +127,28 @@ func main() {
 				udpReq, err := p2p.RequestMessage(p2p.Wizard, reqObj.Type, reqObj.ReqId, reqObj.Payload)
 				fmt.Printf("sending request %s\n", udpReq)
 				peerConn.Write([]byte(udpReq))
-
 				time.Sleep(1 * time.Second)
 			}
 		}()
 
-		// send response
-		go func() {
-			for val := range resChan {
-				msgChan <- WsData{Response: &val}
-				time.Sleep(5 * time.Second)
-			}
-		}()
-
-		// send routing table every 5 seconds
-		go func() {
-			for {
-				routingTable := peerTable.GetRoutingTable()
-				msgChan <- WsData{PeerTable: &routingTable, Transmission: nil}
-				time.Sleep(5 * time.Second)
-			}
-		}()
-
-		// sender junction
+		// Send data to all clients
 		for {
-			select {
-			case msg := <-msgChan:
-				json, err := json.Marshal(msg)
-				if err != nil {
-					fmt.Printf("Error in converting to JSON: %v\n", err)
-					break
-				}
+			msg := <-broadcastChan
+			json, err := json.Marshal(msg)
+			if err != nil {
+				fmt.Printf("Error in converting to JSON: %v\n", err)
+				continue
+			}
 
-				if err := conn.WriteMessage(websocket.TextMessage, json); err != nil {
-					fmt.Printf("Error in writing message: %v\n", err)
-					break
+			clients_mutex.Lock()
+			for client := range clients {
+				err := client.WriteMessage(websocket.TextMessage, json)
+				if err != nil {
+					client.Close()
+					delete(clients, client)
 				}
 			}
+			clients_mutex.Unlock()
 		}
 	})
 

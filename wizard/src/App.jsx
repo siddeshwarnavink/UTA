@@ -62,18 +62,40 @@ const App = () => {
   }, []);
 
   const requestConfig = ip => {
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-      console.error('socket not open or ready');
-      return;
-    }
+    return new Promise((res, rej) => {
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        console.error('socket not open or ready');
+        rej(null);
+        return;
+      }
 
-    try {
+      // send request to ws
       const id = uuidv4();
-      const messageToSend = JSON.stringify({ reqId: id, request: 0, payload: ip });
-      ws.send(messageToSend);
-    } catch (err) {
-      console.error('Error sending message:', err);
-    }
+      try {
+        const messageToSend = JSON.stringify({ reqId: id, request: 0, payload: ip });
+        ws.send(messageToSend);
+      } catch (err) {
+        console.error('Error sending message:', err);
+        rej(err);
+      }
+
+      // listen for response in ws
+      ws.onmessage = (event) => {
+        try {
+          const parsedData = JSON.parse(event.data);
+          if ("response" in parsedData && parsedData.response !== null) {
+            console.log("response", parsedData.response)
+            if(parsedData.response.reqId === id) {
+              res(parsedData.response.data);
+            }
+          }
+        } catch (err) {
+          console.error("Error parsing message:", err);
+          rej(err);
+        }
+      };
+
+    });
   }
 
   if (loading) {

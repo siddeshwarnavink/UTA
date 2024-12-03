@@ -4,7 +4,7 @@ import { Editor } from '@monaco-editor/react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSave } from '@fortawesome/free-solid-svg-icons';
 
-const AdapterConfig = ({ ip, requestConfig }) => {
+const AdapterConfig = ({ ip, requestConfig, requestSaveConfig }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [config, setConfig] = useState("-- Loading ...")
@@ -22,6 +22,15 @@ const AdapterConfig = ({ ip, requestConfig }) => {
     })();
   }, []);
 
+  const saveConfig = async () => {
+    try {
+      await requestSaveConfig(ip, config);
+      alert("Config saved!")
+    } catch (err) {
+      alert("Failed to save config")
+    }
+  }
+
   let content = <Spinner />;
 
   if (!loading && error) {
@@ -33,11 +42,16 @@ const AdapterConfig = ({ ip, requestConfig }) => {
   } else if (!loading && !error) {
     content = (
       <>
-        <Button className="float-end m-3 mb-4">
+        <Button className="float-end m-3 mb-4" onClick={saveConfig}>
           <FontAwesomeIcon icon={faSave} />
           {" "}Save
         </Button>
-        <Editor height="40vh" defaultLanguage="lua" defaultValue={config} />
+        <Editor
+          height="40vh"
+          defaultLanguage="lua"
+          value={config}
+          onChange={val => setConfig(val)}
+        />
       </>
     );
   }

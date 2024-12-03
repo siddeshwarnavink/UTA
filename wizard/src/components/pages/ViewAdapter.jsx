@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import AdapterConfig from '../adapter/AdapterConfig';
 import AdapterLogs from '../adapter/AdapterLogs';
 
-const ViewAdapter = ({ requestConfig, requestLogs }) => {
+const ViewAdapter = ({ requestConfig, requestLogs, requestSaveConfig }) => {
   const { ip } = useParams();
 
   return (
@@ -16,7 +16,7 @@ const ViewAdapter = ({ requestConfig, requestLogs }) => {
         fill
       >
         <Tab eventKey="config" title="Config" >
-          <AdapterConfig ip={ip} requestConfig={requestConfig} />
+          <AdapterConfig ip={ip} requestConfig={requestConfig} requestSaveConfig={requestSaveConfig} />
         </Tab>
         <Tab eventKey="activity" title="Activity" mountOnEnter>
           <AdapterLogs ip={ip} requestLogs={requestLogs} />

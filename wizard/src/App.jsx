@@ -109,6 +109,10 @@ const App = () => {
     return wsRequest(`${ip},${page}`, 1);
   }
 
+  const requestSaveConfig = (ip, config) => {
+    return wsRequest(`${ip},${config}`, 2);
+  }
+
   if (loading) {
     return (
       <Spinner animation="border" role="status">
@@ -144,6 +148,7 @@ const App = () => {
               routingTable={routingTable}
               requestConfig={requestConfig}
               requestLogs={requestLogs}
+              requestSaveConfig={requestSaveConfig}
             />
           } />
         </Route>

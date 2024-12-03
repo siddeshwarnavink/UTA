@@ -126,7 +126,7 @@ func ListenForPeers(peerConn net.UDPConn, role PeerRole, peerTable *PeerTable) (
 				_, reqType, reqId, payload, err := ExtractRequestMessage(message)
 				if err == nil {
 					// if that is me, send response
-					if strings.Contains(payload, peerConn.LocalAddr().String()) {
+					if strings.Split(payload, ",")[0] == peerConn.LocalAddr().String() {
 						fmt.Println("That request is for me")
 						// TODO: validate if valid wizard
 						// send response
@@ -135,6 +135,7 @@ func ListenForPeers(peerConn net.UDPConn, role PeerRole, peerTable *PeerTable) (
 							fmt.Println("asking for my config")
 
 							// TODO: Read config file from flag
+
 							data, err := os.ReadFile("./adapter/config/init.lua")
 							if err != nil {
 								fmt.Println("Error reading config file:", err)
@@ -143,6 +144,19 @@ func ListenForPeers(peerConn net.UDPConn, role PeerRole, peerTable *PeerTable) (
 							configContent := string(data)
 
 							resMsg, err := ResponseMessage(role, reqId, configContent)
+							if err != nil {
+								fmt.Println("Invalid response message:", err)
+								return
+							}
+
+							peerConn.Write([]byte(resMsg))
+							break
+						case RequestTypeSaveConfig:
+							fmt.Println("asking for update config")
+
+							// TODO: actually save the config
+
+							resMsg, err := ResponseMessage(role, reqId, "")
 							if err != nil {
 								fmt.Println("Invalid response message:", err)
 								return

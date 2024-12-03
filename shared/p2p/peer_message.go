@@ -321,6 +321,7 @@ const (
 	RequestMessageTypeInvalid RequestMessageType = -1
 	RequestTypeConfig         RequestMessageType = 0
 	RequestTypeLogs           RequestMessageType = 1
+	RequestTypeSaveConfig     RequestMessageType = 2
 )
 
 type RequestMessageJson struct {

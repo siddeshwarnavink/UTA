@@ -33,8 +33,12 @@ func main() {
 	l := lua.NewState()
 	defer l.Close()
 
-	embeded.HandleLua(l)
+	//doing lua stuff
+	configPath := ui.GetConfigFile()
+	fmt.Printf("Using config file: %s\n", configPath)
+	embeded.HandleLua(l, configPath)
 
+	//render TUI if config not in lua
 	ui.RenderForm()
 
 	peerTable := p2p.NewPeerTable()
@@ -45,14 +49,14 @@ func main() {
 	}
 	defer peerConn.Close()
 
-	if embeded.currentFlags.Mode == embeded.Client {
-		go p2p.AnnouncePresence(*peerConn, p2p.ClientProxy, embeded.currentFlags.Dec, embeded.currentFlags.Enc)
+	if embeded.CurrentFlags.Mode == embeded.Client {
+		go p2p.AnnouncePresence(*peerConn, p2p.ClientProxy, embeded.CurrentFlags.Dec, embeded.CurrentFlags.Enc)
 	} else {
-		go p2p.AnnouncePresence(*peerConn, p2p.ServerProxy, embeded.currentFlags.Dec, embeded.currentFlags.Enc)
+		go p2p.AnnouncePresence(*peerConn, p2p.ServerProxy, embeded.CurrentFlags.Dec, embeded.CurrentFlags.Enc)
 	}
 	p2p.ListenForPeers(peerTable)
 
-	switch embeded.currentFlags.Mode {
+	switch embeded.CurrentFlags.Mode {
 	case embeded.Client:
 		ClientProxy(l, *peerConn)
 	case embeded.Server:
@@ -61,8 +65,8 @@ func main() {
 }
 
 func ClientProxy(l *lua.LState, peerConn net.UDPConn) {
-	fromAddress := embeded.currentFlags.Dec
-	toAddress := embeded.currentFlags.Enc
+	fromAddress := embeded.CurrentFlags.Dec
+	toAddress := embeded.CurrentFlags.Enc
 
 	listener, err := net.Listen("tcp", fromAddress)
 	if err != nil {
@@ -87,7 +91,7 @@ func ClientProxy(l *lua.LState, peerConn net.UDPConn) {
 		}
 		defer encryptedConn.Close()
 
-		keyalgo, err := ui.KeyAlgorithmFromString(embeded.currentFlags.Protocol)
+		keyalgo, err := ui.KeyAlgorithmFromString(embeded.CurrentFlags.KeyAlgo)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -97,7 +101,7 @@ func ClientProxy(l *lua.LState, peerConn net.UDPConn) {
 		if !proxy.IsUninitialized(keyalgo.Key) {
 			fmt.Printf("\nGot shared key %x\n", keyalgo.Key)
 
-			algo, err := ui.AlgorithmFromString(embeded.currentFlags.Algo)
+			algo, err := ui.AlgorithmFromString(embeded.CurrentFlags.CryptoAlgo)
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)
@@ -109,8 +113,8 @@ func ClientProxy(l *lua.LState, peerConn net.UDPConn) {
 }
 
 func ServerProxy(l *lua.LState, peerConn net.UDPConn) {
-	fromAddress := embeded.currentFlags.Enc
-	toAddress := embeded.currentFlags.Dec
+	fromAddress := embeded.CurrentFlags.Enc
+	toAddress := embeded.CurrentFlags.Dec
 
 	listener, err := net.Listen("tcp", fromAddress)
 	if err != nil {
@@ -135,7 +139,7 @@ func ServerProxy(l *lua.LState, peerConn net.UDPConn) {
 		}
 		defer plainConn.Close()
 
-		keyalgo, err := ui.KeyAlgorithmFromString(embeded.currentFlags.Protocol)
+		keyalgo, err := ui.KeyAlgorithmFromString(embeded.CurrentFlags.KeyAlgo)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -146,7 +150,7 @@ func ServerProxy(l *lua.LState, peerConn net.UDPConn) {
 		if !proxy.IsUninitialized(keyalgo.Key) {
 			fmt.Printf("\nGot shared key %x\n", keyalgo.Key)
 
-			algo, err := ui.AlgorithmFromString(embeded.currentFlags.Algo)
+			algo, err := ui.AlgorithmFromString(embeded.CurrentFlags.CryptoAlgo)
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)

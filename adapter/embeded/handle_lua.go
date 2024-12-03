@@ -2,7 +2,9 @@ package embeded
 
 import lua "github.com/yuin/gopher-lua"
 
-func HandleLua(l *lua.LState) {
+func HandleLua(l *lua.LState, configPath string) {
+	l.PreloadModule("config", ConfigLoader)
+
 	// define 'crypto' module in lua
 	l.PreloadModule("crypto", CryptoLoader)
 	// the now-standard algorithms will be provided by us.
@@ -17,7 +19,7 @@ func HandleLua(l *lua.LState) {
 	l.PreloadModule("ui.form", UIFormLoader)
 	l.PreloadModule("ui.mcq", UIMCQLoader)
 
-	if err := l.DoFile("adapter/config/init.lua"); err != nil {
+	if err := l.DoFile(configPath); err != nil {
 		panic(err)
 	}
 }

@@ -21,74 +21,69 @@ func RenderForm() {
 ` + Reset)
 	fmt.Println(Primary + "\033[1m" + "By Code Factory Unlimited" + "\033[1m" + Reset)
 
-	if embeded.currentFlags.Mode == embeded.Client {
-		fmt.Println("Mode: Client")
-	} else {
-		fmt.Println("Mode: Server")
+	if embeded.CurrentFlags.Mode == "" {
+		for _, i := range embeded.UIQuestionList {
+			if i.Name == "MODE" {
+				modeResult, err := i.RenderFunc(i.Question, i.Options, i.PlaceHolder)
+				if err != nil {
+					fmt.Println(err)
+				}
+				fmt.Println("---")
+				embeded.CurrentFlags.Mode = ModeFromString(modeResult)
+			}
+		}
 	}
-	// if embeded.currentFlags.Mode == nil {
-	// 	for _, i := range embeded.UIQuestionList {
-	// 		if i.Name == "MODE" {
-	// 			modeResult, err := i.RenderFunc(i.Question, i.Options, i.PlaceHolder)
-	// 			if err != nil {
-	// 				return embeded.currentFlags, err
-	// 			}
-	// 			fmt.Println("---")
-	// 			embeded.currentFlags.Mode = ModeFromString(modeResult)
-	// 		}
-	// 	}
-	// }
 
-	// if embeded.currentFlags.Dec == "" {
-	// 	for _, i := range embeded.UIQuestionList {
-	// 		if i.Name == "UNENCRYPTED_ADDRESS" {
-	// 			decResult, err := i.RenderFunc(i.Question, i.Options, i.PlaceHolder)
-	// 			if err != nil {
-	// 				return embeded.currentFlags, err
-	// 			}
-	// 			fmt.Println("---")
-	// 			embeded.currentFlags.Dec = decResult
-	// 		}
-	// 	}
-	// }
+	if embeded.CurrentFlags.Dec == "" {
+		for _, i := range embeded.UIQuestionList {
+			if i.Name == "UNENCRYPTED_ADDRESS" {
+				decResult, err := i.RenderFunc(i.Question, i.Options, i.PlaceHolder)
+				if err != nil {
+					fmt.Println(err)
+				}
+				fmt.Println("---")
+				embeded.CurrentFlags.Dec = decResult
+			}
+		}
+	}
 
-	// if embeded.currentFlags.Enc == "" {
-	// 	for _, i := range embeded.UIQuestionList {
-	// 		if i.Name == "ENCRYPTED_ADDRESS" {
-	// 			encResult, err := i.RenderFunc(i.Question, i.Options, i.PlaceHolder)
-	// 			if err != nil {
-	// 				return embeded.currentFlags, err
-	// 			}
-	// 			fmt.Println("---")
-	// 			embeded.currentFlags.Enc = encResult
-	// 		}
-	// 	}
-	// }
+	if embeded.CurrentFlags.Enc == "" {
+		for _, i := range embeded.UIQuestionList {
+			if i.Name == "ENCRYPTED_ADDRESS" {
+				encResult, err := i.RenderFunc(i.Question, i.Options, i.PlaceHolder)
+				if err != nil {
+					fmt.Println(err)
+				}
+				fmt.Println("---")
+				embeded.CurrentFlags.Enc = encResult
+			}
+		}
+	}
 
-	// if embeded.currentFlags.Protocol == "" {
-	// 	for _, i := range embeded.UIQuestionList {
-	// 		if i.Name == "KEY_EXCHANGE" {
-	// 			keyProtoResult, err := i.RenderFunc(i.Question, i.Options, i.PlaceHolder)
-	// 			if err != nil {
-	// 				return embeded.currentFlags, err
-	// 			}
-	// 			fmt.Println("---")
-	// 			embeded.currentFlags.Protocol = keyProtoResult
-	// 		}
-	// 	}
-	// }
+	if embeded.CurrentFlags.KeyAlgo == "" {
+		for _, i := range embeded.UIQuestionList {
+			if i.Name == "KEY_EXCHANGE" {
+				keyProtoResult, err := i.RenderFunc(i.Question, i.Options, i.PlaceHolder)
+				if err != nil {
+					fmt.Println(err)
+				}
+				fmt.Println("---")
+				embeded.CurrentFlags.KeyAlgo = keyProtoResult
+			}
+		}
+	}
 
-	// if embeded.currentFlags.Algo == "" {
-	// 	for _, i := range embeded.UIQuestionList {
-	// 		if i.Name == "ENCRYPTION" {
-	// 			algoResult, err := i.RenderFunc(i.Question, i.Options, i.PlaceHolder)
-	// 			if err != nil {
-	// 				return embeded.currentFlags, err
-	// 			}
-	// 			fmt.Println("---")
-	// 			embeded.currentFlags.Algo = algoResult
-	// 		}
-	// 	}
-	// }
+	if embeded.CurrentFlags.CryptoAlgo == "" {
+		for _, i := range embeded.UIQuestionList {
+			if i.Name == "ENCRYPTION" {
+				algoResult, err := i.RenderFunc(i.Question, i.Options, i.PlaceHolder)
+				if err != nil {
+					fmt.Println(err)
+				}
+				fmt.Println("---")
+				embeded.CurrentFlags.CryptoAlgo = algoResult
+			}
+		}
+	}
 
 }

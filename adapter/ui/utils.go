@@ -2,6 +2,8 @@ package ui
 
 import (
 	"errors"
+	"fmt"
+	"os"
 
 	"github.com/siddeshwarnavink/UTA/adapter/embeded"
 )
@@ -33,4 +35,26 @@ func KeyAlgorithmFromString(s string) (*embeded.KeyExchangeAlgo, error) {
 		}
 	}
 	return nil, errors.New("key exchange algorithm not found")
+}
+
+func GetConfigFile() string {
+	args := os.Args[1:]
+	var filePath string
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		switch arg {
+		case "--config":
+			if i+1 < len(args) {
+				filePath = args[i+1]
+				fmt.Println(filePath)
+				i++
+			} else {
+				fmt.Println("Please provide a config file path")
+				os.Exit(1)
+			}
+		default:
+			continue
+		}
+	}
+	return filePath
 }

@@ -17,40 +17,40 @@ type Flags struct {
 	KeyAlgo    string
 }
 
-var currentFlags Flags
+var CurrentFlags Flags
 
 func ServerModeLua(L *lua.LState) int {
 	isServer := L.CheckBool(1)
 	if isServer {
-		currentFlags.Mode = Server
+		CurrentFlags.Mode = Server
 	} else {
-		currentFlags.Mode = Client
+		CurrentFlags.Mode = Client
 	}
-	L.Push(lua.LString(string(currentFlags.Mode)))
+	L.Push(lua.LString(string(CurrentFlags.Mode)))
 	return 1
 }
 
 func DecryptPortLua(L *lua.LState) int {
-	currentFlags.Dec = L.CheckString(1)
-	L.Push(lua.LString(currentFlags.Dec))
+	CurrentFlags.Dec = L.CheckString(1)
+	L.Push(lua.LString(CurrentFlags.Dec))
 	return 1
 }
 
 func EncryptPortLua(L *lua.LState) int {
-	currentFlags.Enc = L.CheckString(1)
-	L.Push(lua.LString(currentFlags.Enc))
+	CurrentFlags.Enc = L.CheckString(1)
+	L.Push(lua.LString(CurrentFlags.Enc))
 	return 1
 }
 
 func CryptoLua(L *lua.LState) int {
-	currentFlags.CryptoAlgo = L.CheckString(1)
-	L.Push(lua.LString(currentFlags.CryptoAlgo))
+	CurrentFlags.CryptoAlgo = L.CheckString(1)
+	L.Push(lua.LString(CurrentFlags.CryptoAlgo))
 	return 1
 }
 
 func KeyExchangeLua(L *lua.LState) int {
-	currentFlags.KeyAlgo = L.CheckString(1)
-	L.Push(lua.LString(currentFlags.KeyAlgo))
+	CurrentFlags.KeyAlgo = L.CheckString(1)
+	L.Push(lua.LString(CurrentFlags.KeyAlgo))
 	return 1
 }
 

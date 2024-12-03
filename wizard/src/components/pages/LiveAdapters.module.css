@@ -1,0 +1,60 @@
+.useless_thing {
+    margin: 12px 0;
+}
+
+.card {
+    display: flex;
+    justify-content: space-between;
+    flex-direction: row;
+    padding: 16px 12px;
+    align-items: center;
+}
+
+.card .count {
+    line-height: 100%;
+    font-size: 1.75rem;
+}
+
+.card .label {
+    text-transform: uppercase;
+    font-size: 1.2rem;
+}
+
+.card .icon {
+    font-size: 2rem;
+}
+
+.card.cyan {
+    background-color: #28a745 !important;
+    color: #fff !important;
+}
+
+.card.cyan .icon,
+.card.cyan .label {
+    color: #1c702f !important;
+}
+
+.card.yellow {
+    background-color: #ffc107 !important;
+    color: #000 !important;
+}
+
+.card.yellow .icon,
+.card.yellow .label {
+    color: #cb9906 !important;
+}
+
+.card.red {
+    background-color: #dc3545 !important;
+    color: #fff !important;
+}
+
+.card.red .icon,
+.card.red .label {
+    color: #9d2b35 !important;
+}
+
+.liveIcon {
+    width: 40px;
+    margin-right: 10px;
+}

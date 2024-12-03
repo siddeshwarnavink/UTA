@@ -105,8 +105,8 @@ const App = () => {
     return wsRequest(ip, 0);
   }
 
-  const requestLogs = ip => {
-    return wsRequest(ip, 1);
+  const requestLogs = (ip, page) => {
+    return wsRequest(`${ip},${page}`, 1);
   }
 
   if (loading) {

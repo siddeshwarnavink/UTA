@@ -2,13 +2,15 @@ package p2p
 
 import (
 	"fmt"
-	"io"
 	"net"
 	"os"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/jedib0t/go-pretty/table"
+	"github.com/siddeshwarnavink/UTA/shared/utils"
 )
 
 type PeerRole string
@@ -124,7 +126,7 @@ func ListenForPeers(peerConn net.UDPConn, role PeerRole, peerTable *PeerTable) (
 				_, reqType, reqId, payload, err := ExtractRequestMessage(message)
 				if err == nil {
 					// if that is me, send response
-					if payload == peerConn.LocalAddr().String() {
+					if strings.Contains(payload, peerConn.LocalAddr().String()) {
 						fmt.Println("That request is for me")
 						// TODO: validate if valid wizard
 						// send response
@@ -151,25 +153,20 @@ func ListenForPeers(peerConn net.UDPConn, role PeerRole, peerTable *PeerTable) (
 						case RequestTypeLogs:
 							fmt.Println("asking for my logs")
 
-							file, err := os.Open("./logs/adapter.log")
+							payload_split := strings.Split(payload, ",")
+							page_number, err := strconv.Atoi(payload_split[1])
+							if err != nil {
+								page_number = 1
+							}
+
+							data, err := utils.PaginateFile("./logs/adapter.log", page_number, 500)
 							if err != nil {
 								fmt.Println(err)
 								return
 							}
-							defer file.Close()
 
-							const chunkSize = 500
-							buf := make([]byte, chunkSize)
+							resMsg, err := ResponseMessage(role, reqId, string(data))
 
-							_, err = file.Read(buf)
-							if err != nil && err != io.EOF {
-								fmt.Println(err)
-								return
-							}
-
-							resMsg, err := ResponseMessage(role, reqId, string(buf))
-
-							fmt.Printf("my response=%s\n", resMsg)
 							if err != nil {
 								fmt.Println("Invalid response message:", err)
 								return

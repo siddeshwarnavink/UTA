@@ -5,15 +5,20 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDownload, faRefresh } from '@fortawesome/free-solid-svg-icons';
 
 const AdapterLogs = ({ ip, requestLogs }) => {
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [logs, setLogs] = useState("-- Loading ...")
 
-  const fetchLogs = async () => {
+  const fetchLogs = async (p = undefined, append = false) => {
     try {
-      const response = await requestLogs(ip);
+      const response = await requestLogs(ip, p || page);
       setLoading(false);
-      setLogs(response);
+      if (append) {
+        setLogs(curr => `${curr}${response}`);
+      } else {
+        setLogs(response);
+      }
     } catch (err) {
       setLoading(false);
       setError(JSON.stringify(err));
@@ -23,6 +28,11 @@ const AdapterLogs = ({ ip, requestLogs }) => {
   useEffect(() => {
     fetchLogs();
   }, []);
+
+  const fetchNextPage = () => {
+    fetchLogs(page + 1, true);
+    setPage(curr => curr + 1);
+  }
 
   let content = <Spinner />;
 
@@ -39,9 +49,9 @@ const AdapterLogs = ({ ip, requestLogs }) => {
           <FontAwesomeIcon icon={faRefresh} />
           {" "}Refresh
         </Button>
-        <Editor height="30vh" defaultLanguage="text" defaultValue={logs} />
-        <div class="d-flex justify-content-center mt-4">
-          <Button variant="light">
+        <Editor height="30vh" defaultLanguage="text" value={logs} />
+        <div className="d-flex justify-content-center mt-4">
+          <Button variant="light" onClick={fetchNextPage}>
             <FontAwesomeIcon icon={faDownload} />
             {" "}Load more
           </Button>

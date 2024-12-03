@@ -6,29 +6,14 @@ import (
 	"github.com/siddeshwarnavink/UTA/adapter/embeded"
 )
 
-type AdapterMode string
-
-const (
-	Client AdapterMode = "Client"
-	Server AdapterMode = "Server"
-)
-
-type Flags struct {
-	Mode     AdapterMode
-	Enc      string
-	Dec      string
-	Algo     string
-	Protocol string
-}
-
-func ModeFromString(s string) AdapterMode {
+func ModeFromString(s string) embeded.AdapterMode {
 	switch s {
 	case "Client":
-		return Client
+		return embeded.Client
 	case "Server":
-		return Server
+		return embeded.Server
 	default:
-		return Client
+		return embeded.Client
 	}
 }
 

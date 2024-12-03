@@ -18,3 +18,13 @@ ui.add("UNENCRYPTED_ADDRESS","Unencrypted Connection's Address",{" "},"127.0.0.1
 ui.add("ENCRYPTED_ADDRESS","Encrypted Connection's Address",{" "},"127.0.0.1:9999",form.new)
 ui.add("KEY_EXCHANGE","Select the key exchange algorithm",{"DHKC", "RSA"}," ",mcq.new)
 ui.add("ENCRYPTION","Select the encryption algorithm",{"AES"}," ",mcq.new)
+
+
+local conf = require("config")
+
+conf.serverMode(true) -- true means server, false meanse client
+conf.decryptPort("127.0.0.1:10000") -- dec flag
+conf.encryptPort("127.0.0.1:9999") -- enc flag
+conf.crypto("AES")
+conf.keyExchange("dhkc")
+

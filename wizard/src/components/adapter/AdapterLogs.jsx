@@ -47,7 +47,6 @@ const AdapterLogs = ({ ip, requestLogs }) => {
       <>
         <Button className="float-end m-3 mb-4" onClick={() => fetchLogs()} variant="light">
           <FontAwesomeIcon icon={faRefresh} />
-          {" "}Refresh
         </Button>
         <Editor height="30vh" defaultLanguage="text" value={logs} />
         <div className="d-flex justify-content-center mt-4">

@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Alert, Button, Spinner } from 'react-bootstrap';
 import { Editor } from '@monaco-editor/react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSave } from '@fortawesome/free-solid-svg-icons';
+import { faRefresh, faSave } from '@fortawesome/free-solid-svg-icons';
+import Swal from 'sweetalert2'
 
 const AdapterConfig = ({ ip, requestConfig, requestSaveConfig }) => {
   const [loading, setLoading] = useState(true);
@@ -25,9 +26,16 @@ const AdapterConfig = ({ ip, requestConfig, requestSaveConfig }) => {
   const saveConfig = async () => {
     try {
       await requestSaveConfig(ip, config);
-      alert("Config saved!")
+      Swal.fire({
+        title: "Adapter configuration saved",
+        icon: "success"
+      });
     } catch (err) {
-      alert("Failed to save config")
+      Swal.fire({
+        title: "Failed to save configuration",
+        text: "Try refreshing the page and try again",
+        icon: "error"
+      });
     }
   }
 
@@ -42,10 +50,15 @@ const AdapterConfig = ({ ip, requestConfig, requestSaveConfig }) => {
   } else if (!loading && !error) {
     content = (
       <>
-        <Button className="float-end m-3 mb-4" onClick={saveConfig}>
-          <FontAwesomeIcon icon={faSave} />
-          {" "}Save
-        </Button>
+        <div className="float-end">
+          <Button className="m-3" variant="light" onClick={saveConfig}>
+            <FontAwesomeIcon icon={faRefresh} />
+          </Button>
+          <Button onClick={saveConfig}>
+            <FontAwesomeIcon icon={faSave} />
+            {" "}Save
+          </Button>
+        </div>
         <Editor
           height="40vh"
           defaultLanguage="lua"

@@ -28,6 +28,8 @@ func ModeLua(l *lua.LState) int {
 	switch mode {
 	case "SERVER":
 		CurrentFlags.Mode = Server
+	case "RSERVER":
+		CurrentFlags.Mode = ResourceServer
 	case "CLIENT":
 		CurrentFlags.Mode = Client
 	case "BCLIENT":

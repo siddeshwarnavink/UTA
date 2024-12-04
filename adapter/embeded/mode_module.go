@@ -8,6 +8,7 @@ func ModeLoader(l *lua.LState) int {
 
 	// Define the modes as constants (this is similar to an enum)
 	l.SetField(modes, "SERVER", lua.LString("server"))
+	l.SetField(modes, "RSERVER", lua.LString("ResourceServer"))
 	l.SetField(modes, "CLIENT", lua.LString("client"))
 	l.SetField(modes, "BCLIENT", lua.LString("BroadcastClient"))
 	l.SetField(modes, "BSERVER", lua.LString("BroadcastServer"))

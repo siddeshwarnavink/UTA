@@ -3,6 +3,7 @@ package embeded
 import lua "github.com/yuin/gopher-lua"
 
 func HandleLua(l *lua.LState, configPath string) {
+	l.PreloadModule("mode", ModeLoader)
 	l.PreloadModule("config", ConfigLoader)
 
 	// define 'crypto' module in lua

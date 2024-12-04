@@ -5,8 +5,12 @@ import lua "github.com/yuin/gopher-lua"
 type AdapterMode string
 
 const (
-	Client AdapterMode = "Client"
-	Server AdapterMode = "Server"
+	Client          AdapterMode = "Client"
+	Server          AdapterMode = "Server"
+	BroadCastClient AdapterMode = "BroadCastClient"
+	BroadCastServer AdapterMode = "BroadCastServer"
+	InterClient     AdapterMode = "InterClient"
+	InterServer     AdapterMode = "InterServer"
 )
 
 type Flags struct {
@@ -19,14 +23,25 @@ type Flags struct {
 
 var CurrentFlags Flags
 
-func ServerModeLua(L *lua.LState) int {
-	isServer := L.CheckBool(1)
-	if isServer {
+func ModeLua(l *lua.LState) int {
+	mode := l.CheckString(1)
+	switch mode {
+	case "SERVER":
 		CurrentFlags.Mode = Server
-	} else {
+	case "CLIENT":
+		CurrentFlags.Mode = Client
+	case "BCLIENT":
+		CurrentFlags.Mode = BroadCastClient
+	case "BSERVER":
+		CurrentFlags.Mode = BroadCastServer
+	case "ICLIENT":
+		CurrentFlags.Mode = InterClient
+	case "ISERVER":
+		CurrentFlags.Mode = InterServer
+	default:
 		CurrentFlags.Mode = Client
 	}
-	L.Push(lua.LString(string(CurrentFlags.Mode)))
+	l.Push(lua.LString(CurrentFlags.Mode))
 	return 1
 }
 
@@ -56,7 +71,7 @@ func KeyExchangeLua(L *lua.LState) int {
 
 func ConfigLoader(L *lua.LState) int {
 	var exports = map[string]lua.LGFunction{
-		"serverMode":  ServerModeLua,
+		"serverMode":  ModeLua,
 		"decryptPort": DecryptPortLua,
 		"encryptPort": EncryptPortLua,
 		"crypto":      CryptoLua,

@@ -2,6 +2,7 @@ go 1.23.1
 
 use (
 	./adapter
+	./demo/bclient-1
 	./demo/client-1
 	./demo/server-1
 	./shared

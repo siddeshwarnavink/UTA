@@ -2,18 +2,15 @@ package embeded
 
 import lua "github.com/yuin/gopher-lua"
 
-func HandleLua(l *lua.LState) {
-	// define 'crypto' module in lua
+func HandleLua(l *lua.LState, configPath string) {
+	l.PreloadModule("config", ConfigLoader)
 	l.PreloadModule("crypto", CryptoLoader)
-	// the now-standard algorithms will be provided by us.
 	l.PreloadModule("algo.aes", AlogAesLoader)
-
-	// Key exchange
 	l.PreloadModule("keyExchange", KeyExchangeLoader)
 	l.PreloadModule("keyalgo.dh", DiffieHellmanLoader)
 	l.PreloadModule("keyalgo.rsa", RSAKeyExchangeLoader)
 
-	if err := l.DoFile("adapter/config/init.lua"); err != nil {
+	if err := l.DoFile(configPath); err != nil {
 		panic(err)
 	}
 }

@@ -2,11 +2,13 @@ package embeded
 
 import lua "github.com/yuin/gopher-lua"
 
+// Define the AdapterMode type and constants
 type AdapterMode string
 
 const (
 	Client          AdapterMode = "Client"
 	Server          AdapterMode = "Server"
+	ResourceServer  AdapterMode = "ResourceServer"
 	BroadCastClient AdapterMode = "BroadCastClient"
 	BroadCastServer AdapterMode = "BroadCastServer"
 	InterClient     AdapterMode = "InterClient"
@@ -25,25 +27,24 @@ var CurrentFlags Flags
 
 func ModeLua(l *lua.LState) int {
 	mode := l.CheckString(1)
+
 	switch mode {
-	case "SERVER":
+	case "Client":
+		CurrentFlags.Mode = Client
+	case "Server":
 		CurrentFlags.Mode = Server
-	case "RSERVER":
+	case "ResourceServer":
 		CurrentFlags.Mode = ResourceServer
-	case "CLIENT":
-		CurrentFlags.Mode = Client
-	case "BCLIENT":
+	case "BroadCastClient":
 		CurrentFlags.Mode = BroadCastClient
-	case "BSERVER":
+	case "BroadCastServer":
 		CurrentFlags.Mode = BroadCastServer
-	case "ICLIENT":
+	case "InterClient":
 		CurrentFlags.Mode = InterClient
-	case "ISERVER":
+	case "InterServer":
 		CurrentFlags.Mode = InterServer
-	default:
-		CurrentFlags.Mode = Client
 	}
-	l.Push(lua.LString(CurrentFlags.Mode))
+	l.Push(lua.LString(string(CurrentFlags.Mode)))
 	return 1
 }
 
@@ -72,8 +73,8 @@ func KeyExchangeLua(L *lua.LState) int {
 }
 
 func ConfigLoader(L *lua.LState) int {
-	var exports = map[string]lua.LGFunction{
-		"serverMode":  ModeLua,
+	exports := map[string]lua.LGFunction{
+		"Mode":        ModeLua,
 		"decryptPort": DecryptPortLua,
 		"encryptPort": EncryptPortLua,
 		"crypto":      CryptoLua,

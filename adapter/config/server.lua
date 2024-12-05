@@ -23,7 +23,7 @@ ui.add("ENCRYPTION","Select the encryption algorithm",{"AES"}," ",mcq.new)
 local conf = require("config")
 local mode = require("mode")
 
-conf.serverMode(mode.SERVER)
+conf.Mode(mode.SERVER)
 conf.decryptPort("127.0.0.1:10000") -- dec flag
 conf.encryptPort("127.0.0.1:9999") -- enc flag
 conf.crypto("AES")

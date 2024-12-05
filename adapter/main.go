@@ -55,6 +55,8 @@ func main() {
 	}
 	p2p.ListenForPeers(peerTable)
 
+	fmt.Println(embeded.CurrentFlags.Mode)
+
 	switch embeded.CurrentFlags.Mode {
 	case embeded.Client:
 		proxy.ClientProxy(l, *peerConn)

@@ -1,0 +1,6 @@
+#!/bin/bash
+
+./app &
+./uta_wizard --config config.lua &
+
+wait

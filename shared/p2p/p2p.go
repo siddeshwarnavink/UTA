@@ -85,7 +85,7 @@ func AnnouncePresence(conn net.UDPConn, role PeerRole, fromIP, toIP string) {
 	}
 }
 
-func ListenForPeers(peerConn net.UDPConn, role PeerRole, peerTable *PeerTable) (chan TransmissionMsg, chan WsResponseMsg) {
+func ListenForPeers(peerConn net.UDPConn, role PeerRole, peerTable *PeerTable, configPath string) (chan TransmissionMsg, chan WsResponseMsg) {
 	transCh := make(chan TransmissionMsg)
 	resCh := make(chan WsResponseMsg)
 
@@ -136,7 +136,7 @@ func ListenForPeers(peerConn net.UDPConn, role PeerRole, peerTable *PeerTable) (
 
 							// TODO: Read config file from flag
 
-							data, err := os.ReadFile("./adapter/config/init.lua")
+							data, err := os.ReadFile(configPath)
 							if err != nil {
 								fmt.Println("Error reading config file:", err)
 								return

@@ -11,7 +11,7 @@ func main() {
 	local := flag.Bool("local", false, "Run outside docker")
 	flag.Parse()
 
-	serverIP := "client-adapter"
+	serverIP := "client-1"
 	serverPort := 8888
 
 	if *local {
@@ -39,7 +39,7 @@ func main() {
 
 	message := "I'm client!"
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 100; i++ {
 		_, err := conn.Write([]byte(message))
 		if err != nil {
 			fmt.Println("Error sending message:", err)

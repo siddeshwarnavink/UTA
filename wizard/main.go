@@ -57,7 +57,7 @@ func main() {
 	defer peerConn.Close()
 
 	go p2p.AnnouncePresence(*peerConn, p2p.Wizard, "", "")
-	transCh, resChan := p2p.ListenForPeers(*peerConn, p2p.Wizard, peerTable)
+	transCh, resChan := p2p.ListenForPeers(*peerConn, p2p.Wizard, peerTable, "")
 
 	r := gin.Default()
 
@@ -73,7 +73,6 @@ func main() {
 	// Send data transfers
 	go func() {
 		for val := range transCh {
-			fmt.Println("Got a transCh message")
 			broadcastChan <- WsData{Transmission: &val, PeerTable: nil}
 		}
 	}()

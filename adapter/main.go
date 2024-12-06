@@ -69,10 +69,10 @@ func main() {
 
 	if embeded.CurrentFlags.Mode == embeded.Client {
 		go p2p.AnnouncePresence(*peerConn, p2p.ClientProxy, embeded.CurrentFlags.Dec, embeded.CurrentFlags.Enc)
-		p2p.ListenForPeers(*peerConn, p2p.ClientProxy, peerTable)
+		p2p.ListenForPeers(*peerConn, p2p.ClientProxy, peerTable, configPath)
 	} else {
 		go p2p.AnnouncePresence(*peerConn, p2p.ServerProxy, embeded.CurrentFlags.Dec, embeded.CurrentFlags.Enc)
-		p2p.ListenForPeers(*peerConn, p2p.ServerProxy, peerTable)
+		p2p.ListenForPeers(*peerConn, p2p.ServerProxy, peerTable, configPath)
 	}
 
 	switch embeded.CurrentFlags.Mode {

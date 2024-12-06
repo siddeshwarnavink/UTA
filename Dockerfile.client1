@@ -1,0 +1,39 @@
+# Application
+FROM golang:1.23 AS builder1
+
+WORKDIR /app
+
+COPY demo/client-1 .
+
+RUN go build -o app
+
+# Adapter
+FROM golang:1.23 AS builder2
+
+WORKDIR /app
+
+COPY . .
+RUN go work sync
+RUN go build -o uta_wizard ./adapter
+
+FROM debian:latest
+
+# for hacking in
+RUN apt-get update -y
+RUN apt-get install -y vim
+
+WORKDIR /app
+
+RUN export PATH=$PATH:.
+
+RUN mkdir logs
+RUN touch logs/adapter.log
+
+COPY --from=builder1 /app/app .
+COPY --from=builder2 /app/uta_wizard .
+COPY config/client1.lua config.lua
+COPY run-both .
+
+RUN chmod +x run-both
+
+CMD ["./run-both"]

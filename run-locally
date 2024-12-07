@@ -3,10 +3,10 @@
 tmux kill-session -t UTA_running
 tmux new-session -d -s UTA_running -n "adapters"
 
-tmux send-keys -t UTA_running:1 'go run ./adapter --server -enc 127.0.0.1:9999 -dec 127.0.0.1:10000 --prot DHKC --algo AES' C-m
+tmux send-keys -t UTA_running:1 'go run ./adapter --config "config/server_local.lua"' C-m
 
 tmux split-window -h -t UTA_running:1
-tmux send-keys -t UTA_running:1.1 'go run ./adapter --client -dec 127.0.0.1:8888 -enc 127.0.0.1:9999 --prot DHKC --algo AES' C-m
+tmux send-keys -t UTA_running:1 'go run ./adapter --config "config/client_local.lua"' C-m
 
 tmux new-window -t UTA_running -n "wizard"
 tmux send-keys -t UTA_running:2 'go run ./wizard' C-m

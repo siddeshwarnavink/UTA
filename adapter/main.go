@@ -118,7 +118,7 @@ func ClientProxy(l *lua.LState, peerConn net.UDPConn) {
 		keyalgo.Key = keyalgo.Generate(encryptedConn)
 
 		if !proxy.IsUninitialized(keyalgo.Key) {
-			fmt.Printf("\nGot shared key %x\n", keyalgo.Key)
+			// fmt.Printf("\nGot shared key %x\n", keyalgo.Key)
 
 			algo, err := ui.AlgorithmFromString(embeded.CurrentFlags.CryptoAlgo)
 			if err != nil {
@@ -167,7 +167,7 @@ func ServerProxy(l *lua.LState, peerConn net.UDPConn) {
 		keyalgo.Key = keyalgo.Generate(encryptedConn)
 
 		if !proxy.IsUninitialized(keyalgo.Key) {
-			fmt.Printf("\nGot shared key %x\n", keyalgo.Key)
+			// fmt.Printf("\nGot shared key %x\n", keyalgo.Key)
 
 			algo, err := ui.AlgorithmFromString(embeded.CurrentFlags.CryptoAlgo)
 			if err != nil {

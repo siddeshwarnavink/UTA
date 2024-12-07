@@ -51,15 +51,15 @@ const NetworkGraph = ({ routingTable, transmission }) => {
       Object.entries(routingTable)
         .filter(([_, item]) => item.role !== "wizard")
         .forEach(([_, peer]) => {
-          // TCP IP of actual server/client whatever I'm processing.
-          const id = peer.role === "adapter-server" ? peer.from_ip : peer.to_ip;
+          const id = peer.role === "adapter-server" ? peer.to_ip : peer.from_ip;
+          const isServer = peer.role === "adapter-server";
+          const existingNode = newNodes.find(n => n.id === id)
 
-          if (!newNodes.find(n => n.id === id)) {
-            console.log("pushing new node");
+          if (!existingNode) {
             update = true;
             newNodes.push({
               id,
-              type: peer.role === "adapter-server" ? "server" : "client",
+              type: isServer ? "server" : "client",
               position: {
                 x: 0,
                 y: 0
@@ -68,15 +68,15 @@ const NetworkGraph = ({ routingTable, transmission }) => {
             })
           }
 
-          const edgeId = peer.from_ip + "-" + peer.to_ip;
-          if (!newEdges.find(e => e.id === edgeId)) {
+          const edgeId = peer.to_ip + "-" + peer.from_ip; 
+          if (!isServer && !newEdges.find(e => e.id === edgeId)) {
             console.log("pushing new edge", transmission);
             update = true;
             newEdges.push({
               id: edgeId,
               type: transmission && transmission[id] ? "dataFlow" : "smoothstep",
-              source: peer.from_ip,
-              target: peer.to_ip,
+              source: peer.to_ip,
+              target: peer.from_ip,
             })
           }
         });

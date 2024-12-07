@@ -6,6 +6,11 @@ services:
       - "3300:3300"
     networks:
           - adapter-network
+  client-2:
+    build:
+      dockerfile: Dockerfile.client2
+    networks:
+      - adapter-network
 
   client-1:
     build:

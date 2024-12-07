@@ -14,13 +14,13 @@ WORKDIR /app
 
 COPY . .
 RUN go work sync
-RUN go build -o uta_wizard ./adapter 
+RUN go build -o uta_adapter ./adapter 
 
 FROM debian:latest
 
 # for hacking in
 RUN apt-get update -y
-RUN apt-get install -y vim
+RUN apt-get install -y procps vim
 
 WORKDIR /app
 
@@ -30,7 +30,7 @@ RUN mkdir logs
 RUN touch logs/adapter.log
 
 COPY --from=builder1 /app/app .
-COPY --from=builder2 /app/uta_wizard .
+COPY --from=builder2 /app/uta_adapter .
 COPY config/server1.lua config.lua
 COPY run-both .
 

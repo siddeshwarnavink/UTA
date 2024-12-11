@@ -11,6 +11,7 @@ import (
 
 	"github.com/jedib0t/go-pretty/table"
 	"github.com/siddeshwarnavink/UTA/shared/utils"
+	"golang.org/x/net/ipv4"
 )
 
 type PeerRole string
@@ -100,6 +101,11 @@ func ListenForPeers(peerConn net.UDPConn, role PeerRole, peerTable *PeerTable, c
 			panic(err)
 		}
 		defer conn.Close()
+
+		// Fix for windows
+		if err := ipv4.NewPacketConn(conn).SetMulticastLoopback(true); err != nil {
+			fmt.Println("Error setting IP_MULTICAST_LOOP:", err)
+		}
 
 		buf := make([]byte, 6040)
 		for {

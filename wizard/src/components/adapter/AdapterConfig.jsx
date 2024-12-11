@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { Alert, Button, Spinner, Form } from "react-bootstrap";
+import { Alert, Button, Spinner, Form, Collapse } from "react-bootstrap";
 import { Editor } from "@monaco-editor/react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faRefresh, faSave } from "@fortawesome/free-solid-svg-icons";
+import { faRefresh, faSave, faGear, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import Swal from "sweetalert2";
 
 const AdapterConfig = ({ ip, requestConfig, requestSaveConfig }) => {
@@ -64,84 +64,104 @@ const AdapterConfig = ({ ip, requestConfig, requestSaveConfig }) => {
   } else if (!loading && !error) {
     content = (
       <>
-        <h2>Configuration Form</h2>
-        <Form>
-          {/* 1. Mode */}
-          <Form.Group className="mb-3">
-            <Form.Label>Mode</Form.Label>
-            <Form.Check
-              type="radio"
-              label="Server Mode"
-              name="mode"
-              value="serverMode"
-              checked={formData.mode === "serverMode"}
-              onChange={handleInputChange}
-            />
-            <Form.Check
-              type="radio"
-              label="Radio Mode"
-              name="mode"
-              value="radioMode"
-              checked={formData.mode === "radioMode"}
-              onChange={handleInputChange}
-            />
-          </Form.Group>
+        {/* Form Section */}
+        <Collapse in={!showEditor}>
+          <div>
+            <Form>
+              {/* 1. Mode */}
+              <Form.Group className="mb-3">
+                <Form.Label>Mode</Form.Label>
+                <Form.Check
+                  type="radio"
+                  label="Server Mode"
+                  name="mode"
+                  value="serverMode"
+                  checked={formData.mode === "serverMode"}
+                  onChange={handleInputChange}
+                />
+                <Form.Check
+                  type="radio"
+                  label="Client Mode"
+                  name="mode"
+                  value="radioMode"
+                  checked={formData.mode === "radioMode"}
+                  onChange={handleInputChange}
+                />
+              </Form.Group>
 
-          {/* 2. Encrypt Port */}
-          <Form.Group className="mb-3">
-            <Form.Label>Encrypt Port</Form.Label>
-            <Form.Control
-              type="text"
-              placeholder="Enter encrypt port"
-              name="encryptPort"
-              value={formData.encryptPort}
-              onChange={handleInputChange}
-            />
-          </Form.Group>
+              {/* 2. Encrypt Port */}
+              <Form.Group className="mb-3">
+                <Form.Label>Encrypt Port</Form.Label>
+                <Form.Control
+                  type="text"
+                  placeholder="Enter encrypt port"
+                  name="encryptPort"
+                  value={formData.encryptPort}
+                  onChange={handleInputChange}
+                />
+              </Form.Group>
 
-          {/* 3. Decrypt Port */}
-          <Form.Group className="mb-3">
-            <Form.Label>Decrypt Port</Form.Label>
-            <Form.Control
-              type="text"
-              placeholder="Enter decrypt port"
-              name="decryptPort"
-              value={formData.decryptPort}
-              onChange={handleInputChange}
-            />
-          </Form.Group>
+              {/* 3. Decrypt Port */}
+              <Form.Group className="mb-3">
+                <Form.Label>Decrypt Port</Form.Label>
+                <Form.Control
+                  type="text"
+                  placeholder="Enter decrypt port"
+                  name="decryptPort"
+                  value={formData.decryptPort}
+                  onChange={handleInputChange}
+                />
+              </Form.Group>
 
-          {/* 4. Crypto */}
-          <Form.Group className="mb-3">
-            <Form.Label>Crypto</Form.Label>
-            <Form.Control
-              type="text"
-              placeholder="Enter crypto type"
-              name="crypto"
-              value={formData.crypto}
-              onChange={handleInputChange}
-            />
-          </Form.Group>
-        </Form>
+              {/* 4. Crypto */}
+              <Form.Group className="mb-3">
+                <Form.Label>Crypto</Form.Label>
+                <Form.Control
+                  type="text"
+                  placeholder="Enter crypto type"
+                  name="crypto"
+                  value={formData.crypto}
+                  onChange={handleInputChange}
+                />
+              </Form.Group>
 
-        {/* Advanced Button */}
-        <Button
-          variant="secondary"
-          className="my-3"
-          onClick={() => setShowEditor(!showEditor)}
-        >
-          Advanced
-        </Button>
+              {/* Buttons */}
+              <div className="d-flex justify-content-between">
+                <Button variant="success" onClick={saveConfig}>
+                  <FontAwesomeIcon icon={faSave} /> Save
+                </Button>
+                <Button
+                  variant="info"
+                  onClick={() => setShowEditor(!showEditor)}
+                >
+                  <FontAwesomeIcon icon={faGear} /> Advanced
+                </Button>
+              </div>
+            </Form>
+          </div>
+        </Collapse>
 
         {/* Editor Section */}
-        {showEditor && (
-          <Editor
-            height="40vh"
-            defaultLanguage="lua"
-            value={config}
-            onChange={(val) => setConfig(val)}
-          />
-        )}
+        <Collapse in={showEditor}>
+          <div>
+            <Button
+              variant="warning"
+              className="mb-3"
+              onClick={() => setShowEditor(false)}
+            >
+              <FontAwesomeIcon icon={faArrowLeft} /> Back
+            </Button>
+            <Editor
+              height="40vh"
+              defaultLanguage="lua"
+              value={config}
+              onChange={(val) => setConfig(val)}
+            />
+            <Button variant="success" onClick={saveConfig} className="mt-3">
+              <FontAwesomeIcon icon={faSave} /> Save
+            </Button>
+          </div>
+        </Collapse>
       </>
     );
   }

@@ -63,49 +63,49 @@ func TestDiscoveryMessageForWizard(t *testing.T) {
 }
 
 func TestExtractDiscoveryMessageDetailsForClientProxy(t *testing.T) {
-	role, fromIP, toIP, err := ExtractDiscoveryMessageDetails("000001000000110000001010100000000001000000010000101110111000110000001010100000000001000000100000111110100000")
+	role, fromIP, toIP, err := ExtractDiscoveryMessage("000001000000110000001010100000000001000000010000101110111000110000001010100000000001000000100000111110100000")
 
 	if err != nil {
-		t.Errorf("ExtractDiscoveryMessageDetails() error = %v", err)
+		t.Errorf("ExtractDiscoveryMessage() error = %v", err)
 		return
 	}
 
 	if role != ClientProxy {
-		t.Errorf("ExtractDiscoveryMessageDetails() incorrect role = %s", role)
+		t.Errorf("ExtractDiscoveryMessage() incorrect role = %s", role)
 		return
 	}
 
 	if fromIP != "192.168.1.1:3000" {
-		t.Errorf("ExtractDiscoveryMessageDetails() incorrect fromIP = %s", role)
+		t.Errorf("ExtractDiscoveryMessage() incorrect fromIP = %s", role)
 		return
 	}
 
 	if toIP != "192.168.1.2:4000" {
-		t.Errorf("ExtractDiscoveryMessageDetails() incorrect toIP = %s", role)
+		t.Errorf("ExtractDiscoveryMessage() incorrect toIP = %s", role)
 		return
 	}
 }
 
 func TestExtractDiscoveryMessageDetailsForWizard(t *testing.T) {
-	role, fromIP, toIP, err := ExtractDiscoveryMessageDetails("001000000000")
+	role, fromIP, toIP, err := ExtractDiscoveryMessage("001000000000")
 
 	if err != nil {
-		t.Errorf("ExtractDiscoveryMessageDetails() error = %v", err)
+		t.Errorf("ExtractDiscoveryMessage() error = %v", err)
 		return
 	}
 
 	if role != Wizard {
-		t.Errorf("ExtractDiscoveryMessageDetails() incorrect role = %s", role)
+		t.Errorf("ExtractDiscoveryMessage() incorrect role = %s", role)
 		return
 	}
 
 	if fromIP != "" {
-		t.Errorf("ExtractDiscoveryMessageDetails() incorrect fromIP = %s", role)
+		t.Errorf("ExtractDiscoveryMessage() incorrect fromIP = %s", role)
 		return
 	}
 
 	if toIP != "" {
-		t.Errorf("ExtractDiscoveryMessageDetails() incorrect toIP = %s", role)
+		t.Errorf("ExtractDiscoveryMessage() incorrect toIP = %s", role)
 		return
 	}
 }
@@ -126,20 +126,20 @@ func TestTransmissionMessage(t *testing.T) {
 }
 
 func TestExtractTransmissionMessageDetails(t *testing.T) {
-	role, sent, err := ExtractTransmissionMessageDetails("01000000000010")
+	role, sent, err := ExtractTransmissionMessage("01000000000010")
 
 	if err != nil {
-		t.Errorf("ExtractTransmissionMessageDetails() error = %v", err)
+		t.Errorf("ExtractTransmissionMessage() error = %v", err)
 		return
 	}
 
 	if role != ClientProxy {
-		t.Errorf("ExtractTransmissionMessageDetails() incorrect role = %s", role)
+		t.Errorf("ExtractTransmissionMessage() incorrect role = %s", role)
 		return
 	}
 
 	if !sent {
-		t.Errorf("ExtractTransmissionMessageDetails() incorrect transmission state")
+		t.Errorf("ExtractTransmissionMessage() incorrect transmission state")
 		return
 	}
 }
@@ -188,7 +188,7 @@ func TestRequestMessage(t *testing.T) {
 
 func TestStringMessageType(t *testing.T) {
 	bits := "101000000000{\"t\":1,\"i\":\"d4692450-9775-4d5d-a346-4fbf916904c2\",\"p\":\"192.168.1.7:41474\"}0"
-	msgtype, err := GetPeerMsgType(bits)
+	msgtype, err := MsgType(bits)
 	if err != nil {
 		t.Errorf("TestStringMessageType() error = %v", err)
 		return

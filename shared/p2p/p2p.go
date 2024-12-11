@@ -112,7 +112,7 @@ func ListenForPeers(peerConn net.UDPConn, role PeerRole, peerTable *PeerTable, c
 
 			message := string(buf[:n])
 
-			msgtype, err := GetPeerMsgType(message)
+			msgtype, err := MsgType(message)
 			if err != nil {
 				fmt.Printf("Invalid peer message: %s", message)
 			}
@@ -217,7 +217,7 @@ func ListenForPeers(peerConn net.UDPConn, role PeerRole, peerTable *PeerTable, c
 
 			// Wizard getting transmission message
 			if role == Wizard && msgtype == Transmission {
-				_, sent, err := ExtractTransmissionMessageDetails(message)
+				_, sent, err := ExtractTransmissionMessage(message)
 				if err == nil {
 					chmsg := TransmissionMsg{
 						IP:   address,
@@ -248,12 +248,12 @@ func (pt *PeerTable) cleanupInactivePeers() {
 	}
 }
 
-func (pt *PeerTable) updatePeerTable(address string, message string, msgtype PeerMsgType) {
+func (pt *PeerTable) updatePeerTable(address string, message string, msgtype string) {
 	if msgtype == Discovery {
 		pt.mu.Lock()
 		defer pt.mu.Unlock()
 
-		role, fromIP, toIP, err := ExtractDiscoveryMessageDetails(string(message))
+		role, fromIP, toIP, err := ExtractDiscoveryMessage(string(message))
 
 		if err == nil {
 			_, exists := pt.peers[address]

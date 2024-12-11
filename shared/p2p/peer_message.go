@@ -6,39 +6,37 @@ by Sideshwar (who only thinks like web developer btw)
 +----------+-----------------+------------+
 | S.no     | Content         | Size(bits) |
 +----------+-----------------+------------+
-| 1        | Message type    | 2          |
-| 2        | Peer type       | 2          |
-| 3        | Message length  | 8          |
+| 1        | Message type    | 4          |
+| 2        | Peer type       | 4          |
 | 4        | Akshual message | -          |
 +----------+-----------------+------------+
 
-+--------------+------+
-| Message type | Bits |
-+--------------+------+
-| Discovery    | 00   |
-| Transmission | 01   |
-| String       | 10   |
-+--------------+------+
++--------------+-----+
+| Message type | Bits|
++--------------+-----+
+| Discovery    | 0x1 |
+| Transmission | 0x2 |
+| String       | 0x3 |
++--------------+-----+
 
-+----------------+------+
-| Peer type      | Bits |
-+----------------+------+
-| Client adapter | 00   |
-| Server adapter | 01   |
-| Wizard         | 10   |
-+----------------+------+
++----------------+-----+
+| Peer type      | Bits|
++----------------+-----+
+| Client adapter | 0x1 |
+| Server adapter | 0x2 |
+| Wizard         | 0x3 |
++----------------+-----+
 
 Discovery message contains 2 IPv4 - fromIP, toIP
 
-Transmission message contains only one bit,
-0 - sent, 1 - received
+Transmission message contains only one byte,
+00000001 - sent, 00000010 - received
 
 */
 
 package p2p
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -46,15 +44,40 @@ import (
 	"strings"
 )
 
-type PeerMsgType int
+type PeerMsgType string
 
 const (
-	Invalid                   PeerMsgType = -1
-	Discovery                 PeerMsgType = 0
-	Transmission              PeerMsgType = 1
-	StringMessageType         PeerMsgType = 2
-	StringRequestMessageType  PeerMsgType = 3
-	StringResponseMessageType PeerMsgType = 4
+	Invalid      string = "invalid"
+	Discovery    string = "discovery"
+	Transmission string = "transmission"
+)
+
+const (
+	disc  string = "0001"
+	trans string = "0010"
+	str   string = "0011"
+
+	StringRequestMessageType  string = "00000001"
+	StringResponseMessageType string = "00000010"
+)
+
+const (
+	cli string = "0001"
+	srv string = "0010"
+	wiz string = "0011"
+)
+
+const (
+	sen string = "00000001"
+	rec string = "00000010"
+)
+
+const (
+	MessageTypeStart int = 0
+	MessageTypeLen   int = 4
+	PeerTypeStart    int = 4
+	PeerTypeLen      int = 4
+	PayloadStart     int = 8
 )
 
 func convertIPv4ToBits(address string) (string, error) {
@@ -63,17 +86,10 @@ func convertIPv4ToBits(address string) (string, error) {
 		host = address
 	}
 
-	ips, err := net.LookupIP(host)
-	if err != nil {
-		return "", fmt.Errorf("failed to resolve hostname '%s': %v", host, err)
-	}
-	if len(ips) == 0 {
-		return "", fmt.Errorf("no IPs found for hostname '%s'", host)
-	}
-	parsedIP := ips[0]
+	var ip = net.ParseIP(host)
 
 	var bitString strings.Builder
-	if ipv4 := parsedIP.To4(); ipv4 != nil {
+	if ipv4 := ip.To4(); ipv4 != nil {
 		for _, b := range ipv4 {
 			bitString.WriteString(fmt.Sprintf("%08b", b))
 		}
@@ -118,89 +134,98 @@ func convertBitsToIPv4(bits string) (string, error) {
 	return fmt.Sprintf("%s:%d", ipAddress, port), nil
 }
 
-func binaryStringToInt(binary string) int {
-	var result int
-	for i, bit := range binary {
-		if bit == '1' {
-			result += (1 << (7 - i))
-		}
-	}
-	return result
-}
-
-func GetPeerMsgType(bits string) (PeerMsgType, error) {
-	typeBits := bits[:2]
+func MsgType(bits string) (string, error) {
+	typeBits := bits[MessageTypeStart : MessageTypeStart+MessageTypeLen]
 	switch typeBits {
-	case "00":
+	case disc:
 		return Discovery, nil
-	case "01":
+	case trans:
 		return Transmission, nil
-	case "10":
-		if bits[len(bits)-1:] == "0" {
+	case str:
+		switch bits[len(bits)-8:] {
+		case StringRequestMessageType:
 			return StringRequestMessageType, nil
-		} else if bits[len(bits)-1:] == "1" {
+		case StringResponseMessageType:
 			return StringResponseMessageType, nil
+		default:
+			return Invalid, fmt.Errorf("Invalid peer message type: %s", typeBits)
 		}
-		return StringMessageType, nil
 	default:
 		return Invalid, fmt.Errorf("Invalid peer message type: %s", typeBits)
 	}
 }
 
-func DiscoveryMessage(role PeerRole, fromIP string, toIP string) (string, error) {
-	msg := "00"
+func getPeerBits(role PeerRole) (string, error) {
+	roleMap := map[PeerRole]string{
+		ClientProxy: cli,
+		ServerProxy: srv,
+		Wizard:      wiz,
+	}
 
-	roleBits, err := getRoleBits(role)
+	roleBits, ok := roleMap[role]
+	if !ok {
+		return "", fmt.Errorf("Invalid role: %s", role)
+	}
+	return roleBits, nil
+}
+
+func getPeerFromBits(msg string) (PeerRole, error) {
+	roleBits := msg[PeerTypeStart : PeerTypeStart+PeerTypeLen]
+
+	var role PeerRole
+	switch roleBits {
+	case cli:
+		role = ClientProxy
+	case srv:
+		role = ServerProxy
+	case wiz:
+		role = Wizard
+	default:
+		return InvalidRole, fmt.Errorf("unknown role for bit: %s", roleBits)
+	}
+	return role, nil
+}
+
+func DiscoveryMessage(role PeerRole, fromIP string, toIP string) (string, error) {
+	msg := disc
+
+	roleBits, err := getPeerBits(role)
 	if err != nil {
 		return "", err
 	}
 
 	msg += roleBits
 
-	if roleBits != "10" {
-		msg += "01000000" // 64-bits
-
+	if roleBits != wiz {
 		fromIPBits, err := convertIPv4ToBits(fromIP)
 		if err != nil {
 			return "", fmt.Errorf("invalid from IP: %v", err)
 		}
 		msg += fromIPBits
-
 		toIPBits, err := convertIPv4ToBits(toIP)
 		if err != nil {
 			return "", fmt.Errorf("invalid to IP: %v", err)
 		}
 		msg += toIPBits
-	} else {
-		msg += "00000000" // 0-bits
 	}
 
 	return msg, nil
 }
 
-func ExtractDiscoveryMessageDetails(msg string) (PeerRole, string, string, error) {
-	if len(msg) != 108 && len(msg) != 12 {
-		return "", "", "", fmt.Errorf("invalid message size")
-	}
-
-	msgtype, err := GetPeerMsgType(msg)
-	if err != nil || msgtype != Discovery {
-		return "", "", "", fmt.Errorf("not discovery type message")
-	}
-
-	role, err := getRoleFromBits(msg)
+func ExtractDiscoveryMessage(msg string) (PeerRole, string, string, error) {
+	role, err := getPeerFromBits(msg)
 	if err != nil {
 		return "", "", "", err
 	}
 
 	if role != Wizard {
-		fromIPBits := msg[12:60]
+		fromIPBits := msg[PayloadStart : PayloadStart+32]
 		fromIP, err := convertBitsToIPv4(fromIPBits)
 		if err != nil {
 			return "", "", "", fmt.Errorf("failed to convert from IP bits: %v", err)
 		}
 
-		toIPBits := msg[60:108]
+		toIPBits := msg[PayloadStart+32 : PeerTypeStart+64]
 		toIP, err := convertBitsToIPv4(toIPBits)
 		if err != nil {
 			return "", "", "", fmt.Errorf("failed to convert to IP bits: %v", err)
@@ -212,188 +237,63 @@ func ExtractDiscoveryMessageDetails(msg string) (PeerRole, string, string, error
 	}
 }
 
-func getRoleBits(role PeerRole) (string, error) {
-	roleMap := map[PeerRole]string{
-		ClientProxy: "00",
-		ServerProxy: "01",
-		Wizard:      "10",
-	}
-
-	roleBits, ok := roleMap[role]
-	if !ok {
-		return "", fmt.Errorf("Invalid role: %s", role)
-	}
-	return roleBits, nil
-}
-
-func getRoleFromBits(msg string) (PeerRole, error) {
-	roleBits := msg[2:4]
-
-	var role PeerRole
-	switch roleBits {
-	case "00":
-		role = ClientProxy
-	case "01":
-		role = ServerProxy
-	case "10":
-		role = Wizard
-	default:
-		return InvalidRole, fmt.Errorf("unknown role for bit: %s", roleBits)
-	}
-
-	return role, nil
-}
-
 func TransmissionMessage(role PeerRole, sent bool) (string, error) {
-	msg := "01"
-
-	roleBits, err := getRoleBits(role)
+	msg := trans
+	roleBits, err := getPeerBits(role)
 	if err != nil {
 		return "", err
 	}
 
 	msg += roleBits
-
-	msg += "000000001" // 1-bit
-
 	if sent {
-		msg += "0"
+		msg += sen
 	} else {
-		msg += "1"
+		msg += rec
 	}
-
 	return msg, nil
 }
 
-func ExtractTransmissionMessageDetails(msg string) (PeerRole, bool, error) {
-	if len(msg) != 14 {
-		return InvalidRole, false, fmt.Errorf("invalid message size")
-	}
-
-	msgtype, err := GetPeerMsgType(msg)
+func ExtractTransmissionMessage(msg string) (PeerRole, bool, error) {
+	msgtype, err := MsgType(msg)
 	if err != nil || msgtype != Transmission {
 		return InvalidRole, false, fmt.Errorf("not transmission type message")
 	}
 
-	role, err := getRoleFromBits(msg)
+	role, err := getPeerFromBits(msg)
 	if err != nil {
 		return InvalidRole, false, err
 	}
 
-	transmissionBit := string(msg[len(msg)-1])
+	transmissionBit := string(msg[len(msg)-8])
 
-	return role, transmissionBit == "0", err
+	return role, transmissionBit == sen, err
 }
 
 func StringMessage(role PeerRole, message string) (string, error) {
-	msg := "10"
+	msg := str
 
-	roleBits, err := getRoleBits(role)
+	roleBits, err := getPeerBits(role)
 	if err != nil {
 		return "", err
 	}
 
 	msg += roleBits
-	msg += "00000000"
 	msg += message
 
 	return msg, nil
 }
 
 func ExtractStringMessage(msg string) (PeerRole, string, error) {
-	msgtype, err := GetPeerMsgType(msg)
-	if err != nil || !(msgtype == StringMessageType || msgtype == StringRequestMessageType || msgtype == StringResponseMessageType) {
+	msgtype, err := MsgType(msg)
+	if err != nil || !(msgtype == StringRequestMessageType || msgtype == StringResponseMessageType) {
 		return InvalidRole, "", fmt.Errorf("not string message")
 	}
 
-	role, err := getRoleFromBits(msg)
+	role, err := getPeerFromBits(msg)
 	if err != nil {
 		return InvalidRole, "", err
 	}
 
-	strmsg := msg[12:]
+	strmsg := msg[PayloadStart:]
 	return role, strmsg, nil
-}
-
-type RequestMessageType int
-
-const (
-	RequestMessageTypeInvalid RequestMessageType = -1
-	RequestTypeConfig         RequestMessageType = 0
-	RequestTypeLogs           RequestMessageType = 1
-	RequestTypeSaveConfig     RequestMessageType = 2
-)
-
-type RequestMessageJson struct {
-	Type      RequestMessageType `json:"t"`
-	RequestId string             `json:"i"`
-	Payload   string             `json:"p"`
-}
-
-func RequestMessage(role PeerRole, reqType RequestMessageType, requestId string, payload string) (string, error) {
-	reqObj := RequestMessageJson{
-		Type:      reqType,
-		RequestId: requestId,
-		Payload:   payload,
-	}
-
-	json, err := json.Marshal(reqObj)
-	if err != nil {
-		return "", err
-	}
-
-	return StringMessage(role, string(json)+"0")
-}
-
-func ExtractRequestMessage(message string) (PeerRole, RequestMessageType, string, string, error) {
-	role, rawMsg, err := ExtractStringMessage(message)
-	if err != nil {
-		return InvalidRole, RequestMessageTypeInvalid, "", "", err
-	}
-
-	// TODO: Check if valid request message
-
-	var obj RequestMessageJson
-	err = json.Unmarshal([]byte(rawMsg[:len(rawMsg)-1]), &obj)
-	if err != nil {
-		return role, RequestMessageTypeInvalid, "", "", err
-	}
-
-	return role, obj.Type, obj.RequestId, obj.Payload, nil
-}
-
-type ResponseMessageJson struct {
-	RequestId string `json:"i"`
-	Data      string `json:"d"`
-}
-
-func ResponseMessage(role PeerRole, requestId string, data string) (string, error) {
-	reqObj := ResponseMessageJson{
-		RequestId: requestId,
-		Data:      data,
-	}
-
-	json, err := json.Marshal(reqObj)
-	if err != nil {
-		return "", err
-	}
-
-	return StringMessage(role, string(json)+"1")
-}
-
-func ExtractResponseMessage(message string) (PeerRole, string, string, error) {
-	role, rawMsg, err := ExtractStringMessage(message)
-	if err != nil {
-		return InvalidRole, "", "", err
-	}
-
-	// TODO: Check if valid response message
-
-	var obj ResponseMessageJson
-	err = json.Unmarshal([]byte(rawMsg[:len(rawMsg)-1]), &obj)
-	if err != nil {
-		return role, "", "", err
-	}
-
-	return role, obj.RequestId, obj.Data, nil
 }

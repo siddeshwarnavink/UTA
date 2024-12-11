@@ -116,11 +116,12 @@ func ListenForPeers(peerConn net.UDPConn, role PeerRole, peerTable *PeerTable, c
 			}
 			address := src.String()
 
-			message := string(buf[:n])
+			message := buf[:n]
 
 			msgtype, err := GetPeerMsgType(message)
 			if err != nil {
-				fmt.Printf("Invalid peer message: %s", message)
+				fmt.Printf("Invalid peer message: %s\n", message)
+				fmt.Printf("%s\n", err)
 			}
 
 			// fmt.Printf("UDP(%d)=%s\n", msgtype, message)
@@ -254,12 +255,12 @@ func (pt *PeerTable) cleanupInactivePeers() {
 	}
 }
 
-func (pt *PeerTable) updatePeerTable(address string, message string, msgtype PeerMsgType) {
+func (pt *PeerTable) updatePeerTable(address string, message []byte, msgtype PeerMsgType) {
 	if msgtype == Discovery {
 		pt.mu.Lock()
 		defer pt.mu.Unlock()
 
-		role, fromIP, toIP, err := ExtractDiscoveryMessageDetails(string(message))
+		role, fromIP, toIP, err := ExtractDiscoveryMessageDetails(message)
 
 		if err == nil {
 			_, exists := pt.peers[address]

@@ -85,11 +85,10 @@ const LiveAdapters = ({ routingTable, transmission }) => {
       <Table>
         <thead>
           <tr>
-            <th>UDP IP</th>
+            <th>ID</th>
             <th></th>
             <th>Role</th>
-            <th>From IP</th>
-            <th>To IP</th>
+            <th>TCP IP</th>
             <th>Last Seen</th>
           </tr>
         </thead>
@@ -124,8 +123,9 @@ const LiveAdapters = ({ routingTable, transmission }) => {
                       Server
                     </span>
                   ) : peer.role}</td>
-                  <td>{peer.from_ip}</td>
-                  <td>{peer.to_ip}</td>
+                  <td>
+                    {peer.role === "adapter-client" ? peer.from_ip : peer.to_ip}
+                  </td>
                   <td>
                     {moment(peer.last_seen).fromNow()}
                   </td>

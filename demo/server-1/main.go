@@ -42,6 +42,7 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup) {
 
 func main() {
 	local := flag.Bool("local", false, "Run outside docker")
+	raw := flag.Bool("raw", false, "Run without adapter")
 	flag.Parse()
 
 	addr := "0.0.0.0:10000"
@@ -49,6 +50,12 @@ func main() {
 	if *local {
 		addr = "127.0.0.1:10000"
 	}
+
+
+	if *raw {
+		addr = "localhost:8888"
+	}
+
 
 	var listener net.Listener
 	var err error

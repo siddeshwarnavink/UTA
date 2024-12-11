@@ -1,0 +1,19 @@
+
+=== Metrics without adapter ===
+Total Messages Sent: 100
+Successful Messages: 100
+Packet Loss: 0.00%
+Average RTT: 932.668µs
+Throughput: 1.00 messages/second
+===============================
+
+
+=== Metrics with adapter ===
+Total Messages Sent: 100
+Successful Messages: 100
+Packet Loss: 0.00%
+Average RTT: 1.025935ms
+Throughput: 1.00 messages/second
+============================
+
+Percentage Increase (approx.) = 10%

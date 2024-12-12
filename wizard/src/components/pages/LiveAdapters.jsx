@@ -80,15 +80,15 @@ const LiveAdapters = ({ routingTable, transmission }) => {
       </Row>
       <h3 className="my-4">
         <img src={liveIcon} alt="Live now..." className={classes.liveIcon} />
-        Live Adapters
+        Live UTA
       </h3>
       <Table>
         <thead>
           <tr>
-            <th>ID</th>
+            <th>System ID</th>
             <th></th>
             <th>Role</th>
-            <th>TCP IP</th>
+            <th>System IP</th>
             <th>Last Seen</th>
           </tr>
         </thead>

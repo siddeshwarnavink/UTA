@@ -15,10 +15,10 @@ const ViewAdapter = ({ requestConfig, requestLogs, requestSaveConfig }) => {
         className="mb-3"
         fill
       >
-        <Tab eventKey="config" title="Config" >
+        <Tab eventKey="config" title="Properties" >
           <AdapterConfig ip={ip} requestConfig={requestConfig} requestSaveConfig={requestSaveConfig} />
         </Tab>
-        <Tab eventKey="activity" title="Activity" mountOnEnter>
+        <Tab eventKey="activity" title="Log History" mountOnEnter>
           <AdapterLogs ip={ip} requestLogs={requestLogs} />
         </Tab>
       </Tabs>
